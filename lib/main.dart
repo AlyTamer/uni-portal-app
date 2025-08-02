@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:uni_portal_app/screens/login_screen.dart';
+import 'package:uni_portal_app/screens/dummy_screen.dart';
+import 'package:uni_portal_app/screens/mailbox_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  runApp(MainApp());
+  runApp(const MainApp());
 }
 
 class MainApp extends StatelessWidget {
@@ -14,13 +17,13 @@ class MainApp extends StatelessWidget {
       title: 'UHub',
       theme: ThemeData.dark().copyWith(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurpleAccent),
-        textTheme: TextTheme(
+        textTheme: const TextTheme(
           titleLarge: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
           titleMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           titleSmall: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-        ),),
-
-      home: LoginScreen(),
+        ),
+      ),
+      home: const LoginScreen(),
     );
   }
 }
