@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uni_portal_app/global_vars.dart';
-import '../functions/owa_scrapper.dart';
-import 'mailbox_home_screen.dart';
+import '../functions/mailbox_webview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -42,16 +42,22 @@ class _LoginScreenState extends State<LoginScreen> {
   }
   Future<void> tryLoginAndFetchInbox() async {
     try {
-      // Navigate and replace the login screen
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('savedUsername', username);
+      await prefs.setString('savedPassword', password);
+
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => OwaScraper(username: username, password: password),
+          builder: (context) => OwaWebView(
+            username: username,
+            password: password,
+          ),
         ),
       );
     } catch (e) {
-      print('Login or fetch failed: $e');
+      print('Login or navigation failed: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Login failed. Please check your credentials.'),
@@ -59,6 +65,27 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     }
+  }
+  @override
+  void initState() {
+    super.initState();
+
+    SharedPreferences.getInstance().then((prefs) {
+      final savedUsername = prefs.getString('savedUsername') ?? "NO_USERNAME";
+      final savedPassword = prefs.getString('savedPassword') ?? "NO_PASSWORD";
+
+      if (savedUsername != "NO_USERNAME" && savedPassword != "NO_PASSWORD") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OwaWebView(
+              username: savedUsername,
+              password: savedPassword,
+            ),
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -75,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
             end: Alignment.bottomRight,).createShader(
               Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
         child: RichText(text: TextSpan(text: 'UHub',
-          style: TextStyle(color: Colors.white, // Required for ShaderMask
+          style: TextStyle(color: Colors.white,
             fontSize: 140, fontWeight: FontWeight.bold,),
         ),
         ),
@@ -141,7 +168,6 @@ class _LoginScreenState extends State<LoginScreen> {
         hintText: 'Enter Your Password',
      ),),
         const SizedBox(height: 16),
-        // ignore: sized_box_for_whitespace
         Container(
           width: double.infinity,
           child: ElevatedButton(
@@ -152,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (validateInput()) {
                   print("Username: $username");
                   print("Password: $password");
-                  tryLoginAndFetchInbox(); // this will also print status code, headers, etc.
+                  tryLoginAndFetchInbox();
                 }
               }, child: Text("Login", style: TextStyle(fontSize: 20,
                 fontWeight: FontWeight.bold,
