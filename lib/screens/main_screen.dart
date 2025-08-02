@@ -9,9 +9,7 @@ import 'mailbox_screen.dart';
 class HomeScreen extends StatelessWidget {
   final String username;
   final String password;
-  const HomeScreen({super.key,
-  required this.username,
-  required this.password});
+  const HomeScreen({super.key, required this.username, required this.password});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +19,7 @@ class HomeScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           leading: Icon(Icons.person),
-          title:Text.rich(
+          title: Text.rich(
             TextSpan(
               children: [
                 TextSpan(
@@ -29,34 +27,50 @@ class HomeScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 WidgetSpan(
-                  child: ShaderMask(shaderCallback: (bounds) =>
-                      LinearGradient(colors: [Colors.purple, Colors.pink,Colors.blueAccent],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,).createShader(
-                          Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-                    child: RichText(text: TextSpan(text:fName,
-                      style: Theme.of(context).textTheme.titleLarge
+                  child: ShaderMask(
+                    shaderCallback: (bounds) =>
+                        LinearGradient(
+                          colors: [
+                            Colors.purple,
+                            Colors.pink,
+                            Colors.blueAccent,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ).createShader(
+                          Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                        ),
+                    child: RichText(
+                      text: TextSpan(
+                        text: fName,
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    ),
                   ),
-
+                ),
               ],
             ),
           ),
           titleSpacing: 0.7,
-        )
-        ,
+        ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
               const Spacer(),
-              ShaderMask(shaderCallback: (bounds) =>
-                  LinearGradient(colors: [Colors.purple, Colors.pink, Colors.lightBlue],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,).createShader(
-                      Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+              ShaderMask(
+                shaderCallback: (bounds) =>
+                    LinearGradient(
+                      colors: [
+                        Colors.purpleAccent,
+                        Colors.pink,
+                        Colors.lightBlue,
+                      ],
+                      begin: Alignment.topRight,
+                      end: Alignment.centerLeft,
+                    ).createShader(
+                      Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                    ),
                 child: Container(
                   height: 270,
                   width: double.infinity,
@@ -66,41 +80,64 @@ class HomeScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      const SizedBox(height: 16.0,),
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-
-                      ),
-                      const Spacer(),
+                      const Spacer(flex:2),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          IconButton(onPressed: () async {
-                            await clearWebViewSession();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => FullOwaScreen(
-                                  username: username,
-                                  password: password,
+                          GestureDetector(
+                            onTap: () async {
+                              await clearWebViewSession();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FullOwaScreen(
+                                    username: username,
+                                    password: password,
+                                  ),
                                 ),
-                              ),
-                            );
-                          }, icon: Icon(Icons.mail,
-                          size:100,color: Colors.blueAccent,)),
-                          IconButton(onPressed: () async {
-                            SharedPreferences prefs = await SharedPreferences.getInstance();
-                            await prefs.remove('savedUsername');
-                            await prefs.remove('savedPassword');
-                            await clearWebViewSession();
-                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
-                            }, icon: Icon(Icons.logout,
-                          size: 90,color: Colors.red,)),
-                          InteractiveIcon(icon: Icons.list_alt_rounded,iconName: 'Sched',iconSize: 60,iconColor: Colors.white,),
+                              );
+                            },
+                            child: InteractiveIcon(
+                              icon: Icons.mail,
+                              iconName: 'Mail',
+                              iconColor: Colors.white,
+                              iconSize: 60,
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {},
+                            child: InteractiveIcon(
+                              icon: Icons.list_alt_rounded,
+                              iconName: 'Sched',
+                              iconSize: 60,
+                              iconColor: Colors.white,
+                            ),
+                          ),
 
+                          ElevatedButton(
+                            onPressed: () async {
+                              SharedPreferences prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.remove('savedUsername');
+                              await prefs.remove('savedPassword');
+                              await clearWebViewSession();
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LoginScreen(),
+                                ),
+                              );
+                            },
+                            child: InteractiveIcon(
+                              icon: Icons.logout,
+                              iconName: 'Logout',
+                              iconColor: Colors.red,
+                              iconSize: 60,
+                            ),
+                          ),
                         ],
                       ),
-                      const Spacer(flex:3),
+                      const Spacer(flex: 3),
                     ],
                   ),
                 ),
@@ -114,8 +151,11 @@ class HomeScreen extends StatelessWidget {
                   color: Color.fromRGBO(30, 30, 30, 1.0),
                 ),
                 child: Center(
-                    child: const Text("PLACEHOLDER\nRECENT NOTIS\nSCROLL LIST",
-                    style: TextStyle(fontSize: 50),)),
+                  child: const Text(
+                    "PLACEHOLDER\nRECENT NOTIS\nSCROLL LIST",
+                    style: TextStyle(fontSize: 50),
+                  ),
+                ),
               ),
               const Spacer(),
             ],
