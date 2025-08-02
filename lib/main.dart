@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:uni_portal_app/screens/login_screen.dart';
-import 'package:uni_portal_app/screens/main_screen.dart';
 
 void main() {
   runApp(MainApp());

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_portal_app/screens/login_screen.dart';
 
 import '../functions/webview_util.dart';
+import 'app_icon_widget.dart';
 import 'mailbox_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -51,51 +52,57 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(),
-              Container(
-                height: 270,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16.0),
-                  color: Color.fromRGBO(30, 30, 30, 1.0),
-                ),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16.0,),
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                          child: Text("Actions",style: Theme.of(context).textTheme.titleLarge,)),
-                    ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        IconButton(onPressed: () async {
-                          await clearWebViewSession();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => FullOwaScreen(
-                                username: username,
-                                password: password,
+              ShaderMask(shaderCallback: (bounds) =>
+                  LinearGradient(colors: [Colors.purple, Colors.pink, Colors.lightBlue],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,).createShader(
+                      Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+                child: Container(
+                  height: 270,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16.0),
+                    color: Color.fromRGBO(30, 30, 30, 1.0),
+                  ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 16.0,),
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+
+                      ),
+                      const Spacer(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(onPressed: () async {
+                            await clearWebViewSession();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FullOwaScreen(
+                                  username: username,
+                                  password: password,
+                                ),
                               ),
-                            ),
-                          );
-                        }, icon: Icon(Icons.mail,
-                        size:100,color: Colors.blueAccent,)),
-                        IconButton(onPressed: () async {
-                          SharedPreferences prefs = await SharedPreferences.getInstance();
-                          await prefs.remove('savedUsername');
-                          await prefs.remove('savedPassword');
-                          await clearWebViewSession();
-                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
-                          }, icon: Icon(Icons.logout,
-                        size: 90,color: Colors.red,))
-                      ],
-                    ),
-                    const Spacer(flex:3),
-                  ],
+                            );
+                          }, icon: Icon(Icons.mail,
+                          size:100,color: Colors.blueAccent,)),
+                          IconButton(onPressed: () async {
+                            SharedPreferences prefs = await SharedPreferences.getInstance();
+                            await prefs.remove('savedUsername');
+                            await prefs.remove('savedPassword');
+                            await clearWebViewSession();
+                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+                            }, icon: Icon(Icons.logout,
+                          size: 90,color: Colors.red,)),
+                          InteractiveIcon(icon: Icons.list_alt_rounded,iconName: 'Sched',iconSize: 60,iconColor: Colors.white,),
+
+                        ],
+                      ),
+                      const Spacer(flex:3),
+                    ],
+                  ),
                 ),
               ),
               const Spacer(),

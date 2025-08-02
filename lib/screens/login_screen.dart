@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:uni_portal_app/screens/main_screen.dart';
-import '../functions/mailbox_webview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../functions/webview_util.dart';
@@ -101,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Spacer(),
       Center(
         child: ShaderMask(shaderCallback: (bounds) =>
-          LinearGradient(colors: [Colors.purple, Colors.pink],
+          LinearGradient(colors: [Colors.purple, Colors.pink, Colors.lightBlue],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,).createShader(
               Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
@@ -172,11 +171,11 @@ class _LoginScreenState extends State<LoginScreen> {
         hintText: 'Enter Your Password',
      ),),
         const SizedBox(height: 16),
-        Container(
+        SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             style: ButtonStyle(
-              backgroundColor: WidgetStatePropertyAll<Color>(Colors.green),
+               backgroundColor: WidgetStatePropertyAll<Color>(Color.fromRGBO(213, 111, 172, 1.0)),
             ),
               onPressed: () async {
                 if (validateInput()) {
@@ -185,31 +184,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 }
               }, child: Text("Login", style: TextStyle(fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,),)),
+                color: Color.fromRGBO(
+                    255, 255, 255, 1.0)
+                ,),)),
         ),
-        ElevatedButton(style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.all<Color>(
-              Color.fromRGBO(213, 111, 172, 1.0)),),
-            onPressed: () {
-              showDialog(context: context, builder: (context) =>
-                  AlertDialog(backgroundColor: Color.fromRGBO(50, 28, 89, 1.0),
-                    title: Text("Check These Things!", style: Theme
-                        .of(context)
-                        .textTheme
-                        .titleLarge,),
-                    content: Text(
-                      "1- Make sure you have a stable internet connection.\n"
-                          "2- Ensure your username and password are correct.\n"
-                          "3- If you forgot your password, use the 'Forgot Password' option.",
-                      style: TextStyle(fontSize: 22),),
-                    actions: [TextButton(onPressed: () {
-                      Navigator.of(context).pop();
-                    }, child: Text("OK",),),
-                    ],));
-            },
-            child: Text("Trouble Logging In?", style: TextStyle(fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,),)),
+
 const Spacer(flex:2)
 
         ],),));

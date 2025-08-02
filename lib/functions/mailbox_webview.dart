@@ -55,7 +55,7 @@ class _OwaWebViewState extends State<OwaWebView> {
       function applyDarkStyles() {
         const all = document.querySelectorAll('*');
         for (let i = 0; i < all.length; i++) {
-          all[i].style.backgroundColor = '#121212';
+          all[i].style.backgroundColor = '#000000';
           all[i].style.color = '#e0e0e0';
         }
       }
@@ -97,6 +97,7 @@ class _OwaWebViewState extends State<OwaWebView> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -111,7 +112,6 @@ class _OwaWebViewState extends State<OwaWebView> {
       child: RefreshIndicator(
         onRefresh: () async {
           await controller.reload();
-          // CSS injection will run again via onPageFinished
         },
         child: WebViewWidget(controller: controller),
       ),
