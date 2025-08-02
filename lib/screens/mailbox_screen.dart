@@ -14,14 +14,10 @@ class FullOwaScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Outlook Web Access'),
-        backgroundColor: Colors.black,
-      ),
-      body: const SafeArea(
+      body:  SafeArea(
         child: OwaWebView(
-          username: 'aly.elanany',
-          password: 'aeASTER12@',
+          username: username,
+          password: password,
         ),
       ),
     );

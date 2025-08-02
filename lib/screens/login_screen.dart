@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:uni_portal_app/global_vars.dart';
+import 'package:uni_portal_app/screens/main_screen.dart';
 import '../functions/mailbox_webview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../functions/webview_util.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -13,6 +15,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   String? usernameError;
   String? passwordError;
+  late String username;
+  late String password;
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool validateInput(){
@@ -50,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => OwaWebView(
+          builder: (context) => HomeScreen(
             username: username,
             password: password,
           ),
@@ -78,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => OwaWebView(
+            builder: (context) => HomeScreen(
               username: savedUsername,
               password: savedPassword,
             ),
@@ -174,10 +178,9 @@ class _LoginScreenState extends State<LoginScreen> {
             style: ButtonStyle(
               backgroundColor: WidgetStatePropertyAll<Color>(Colors.green),
             ),
-              onPressed: () {
+              onPressed: () async {
                 if (validateInput()) {
-                  print("Username: $username");
-                  print("Password: $password");
+                  await clearWebViewSession();
                   tryLoginAndFetchInbox();
                 }
               }, child: Text("Login", style: TextStyle(fontSize: 20,
