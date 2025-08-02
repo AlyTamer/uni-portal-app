@@ -14,7 +14,8 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String fName= username.split('.').first;
+    String fName = username.split('.').first;
+    fName = fName[0].toUpperCase() + fName.substring(1);
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(

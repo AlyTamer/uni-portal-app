@@ -52,27 +52,37 @@ class _OwaWebViewState extends State<OwaWebView> {
   Future<void> _injectDarkModeCSS() async {
     const js = '''
     (function() {
-      const css = `
-        html, body {
-          background-color: #121212 !important;
-          color: #e0e0e0 !important;
+      function applyDarkStyles() {
+        const all = document.querySelectorAll('*');
+        for (let i = 0; i < all.length; i++) {
+          all[i].style.backgroundColor = '#121212';
+          all[i].style.color = '#e0e0e0';
         }
-      `;
-      let tries = 0;
-      const interval = setInterval(() => {
-        if (!document.getElementById('dark-mode-style')) {
-          const style = document.createElement('style');
-          style.id = 'dark-mode-style';
-          style.innerHTML = css;
-          document.head.appendChild(style);
-        }
-        if (++tries > 10) clearInterval(interval);
-      }, 500);
+      }
+
+      // Apply once now
+      applyDarkStyles();
+
+      // Set up observer for future dynamic content
+      const observer = new MutationObserver((mutations) => {
+        applyDarkStyles();
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
     })();
   ''';
 
-    await controller.runJavaScript(js);
+    // Retry up to 5 times to ensure it's injected during async DOM changes
+    for (int i = 0; i < 5; i++) {
+      await controller.runJavaScript(js);
+      await Future.delayed(const Duration(seconds: 1));
+    }
   }
+
+
 
   Future<void> _injectNoZoomMeta() async {
     await controller.runJavaScript('''
@@ -103,13 +113,7 @@ class _OwaWebViewState extends State<OwaWebView> {
           await controller.reload();
           // CSS injection will run again via onPageFinished
         },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height,
-            child: WebViewWidget(controller: controller),
-          ),
-        ),
+        child: WebViewWidget(controller: controller),
       ),
     );
   }
