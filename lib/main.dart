@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:uni_portal_app/screens/cms/cms_main_screen.dart';
+import 'package:uni_portal_app/screens/cms/view_all_courses.dart';
 import 'package:uni_portal_app/screens/login_screen.dart';
 
 void main() {
@@ -11,6 +13,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'UHub',
       theme: ThemeData.dark().copyWith(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurpleAccent,
@@ -22,11 +25,11 @@ class MainApp extends StatelessWidget {
           titleMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           titleSmall: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
         ),
-       scaffoldBackgroundColor: Colors.black
+       scaffoldBackgroundColor: Colors.black,
 
       ),
 
-      home: LoginScreen(),
+      home: ViewAllScreen(),
     );
   }
 }

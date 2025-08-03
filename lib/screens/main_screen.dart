@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_portal_app/screens/login_screen.dart';
 
 import '../functions/webview_util.dart';
-import 'app_icon_widget.dart';
+import '../widgets/app_icon_widget.dart';
 import 'mailbox_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -117,7 +117,7 @@ class HomeScreen extends StatelessWidget {
                           ElevatedButton(
                             onPressed: () async {
                               SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
+                              await SharedPreferences.getInstance();
                               await prefs.remove('savedUsername');
                               await prefs.remove('savedPassword');
                               await clearWebViewSession();
