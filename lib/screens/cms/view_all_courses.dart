@@ -142,6 +142,9 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
           ),
         ),
         appBar: AppBar(
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          backgroundColor: const Color.fromRGBO(1, 1, 1, 1),
           leading: Builder(
             builder: (context) => Container(
               width: 50,
