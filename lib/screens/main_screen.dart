@@ -83,7 +83,7 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       const Spacer(flex:2),
                       Padding(
-                        padding: const EdgeInsets.all(12.0),
+                        padding: const EdgeInsets.all(2.0),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -130,6 +130,7 @@ class HomeScreen extends StatelessWidget {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
+
                               ),
                               onPressed: () {
                                 Navigator.push(context, MaterialPageRoute(
@@ -146,8 +147,9 @@ class HomeScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                      const SizedBox(height:12),
                       Padding(
-                        padding: const EdgeInsets.all(12.0),
+                        padding: const EdgeInsets.all(4.0),
                         child: Row(
                           children: [
                             ElevatedButton(
