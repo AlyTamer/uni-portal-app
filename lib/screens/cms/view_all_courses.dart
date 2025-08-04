@@ -28,7 +28,7 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
     try {
       final cmsService = CmsService();
       final data = await cmsService.fetchCourses();
-      print("Fetched courses: $data");
+
       setState(() {
         allCourses = data;
         allSeasons = allCourses.map((c) => c['season'] as String).toSet().toList();
@@ -36,7 +36,7 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
       });
 
     } catch (e) {
-      print("Error loading courses: $e");
+
       setState(() {
         isLoading = false;
       });
@@ -133,7 +133,7 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
                         leading: const Icon(Icons.arrow_right, color: Colors.deepPurple,size: 60,),
                         tileColor: Color.fromRGBO(10, 10, 10, 1),
                         onTap: () {
-                          print('Selected course: ${selectedCourses[idx]}');
+
                           Navigator.push(context,MaterialPageRoute(
                             builder:(context)=>ActiveCourse(courseName: selectedCourses[idx]['name']!, courseUrl: selectedCourses[idx]['url']!)
                           ));

@@ -13,18 +13,17 @@ class CmsService {
     final prefs = await SharedPreferences.getInstance();
     final username = prefs.getString('savedUsername')?.toLowerCase() ?? '';
     final password = prefs.getString('savedPassword') ?? '';
-    print("DEBUG: Using username: $username");
-    print("DEBUG: Using password: ${password}");
+
 
     try {
-      print('attempting to create NTLM client');
+
       return NTLMClient(
         domain: 'guc.edu.eg',
         username: username,
         password: password,
       );
     } on Exception catch (e) {
-      print('Failed to create NTLM client: $e');
+
       throw Exception('Failed to create NTLM client');
     }
   }
@@ -35,7 +34,7 @@ class CmsService {
       Uri.parse('https://cms.guc.edu.eg/apps/student/ViewAllCourseStn'),
     );
 
-    print("HTTP status: ${response.statusCode}");
+
 
     if (response.statusCode != 200) {
       throw Exception('Failed to fetch courses');
@@ -43,7 +42,7 @@ class CmsService {
 
     final document = parser.parse(response.body);
     final seasonElements = document.querySelectorAll('.menu-header-title');
-    print("DEBUG: Found ${seasonElements.length} season elements");
+
 
     List<Map<String, dynamic>> results = [];
 
@@ -161,7 +160,7 @@ Future<void> downloadFile(BuildContext context, String relativePath, String file
 
     // Build full URL
     final url = "https://cms.guc.edu.eg$relativePath";
-    print("Downloading from: $url");
+
 
     // Fetch file
     final response = await client.get(Uri.parse(url));
@@ -179,11 +178,15 @@ Future<void> downloadFile(BuildContext context, String relativePath, String file
       final filePath = "${downloadDir.path}/$filename";
       final file = File(filePath);
       await file.writeAsBytes(response.bodyBytes);
-      print("File saved to $filePath");
+
 
       // Notify user
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Downloaded: $filename")),
+        SnackBar(
+            content: Text("Downloaded: $filename",
+              style: Theme.of(context).textTheme.titleSmall,
+        ),
+        backgroundColor: Colors.deepPurple,),
       );
 
       // Open the file
@@ -194,7 +197,7 @@ Future<void> downloadFile(BuildContext context, String relativePath, String file
       );
     }
   } catch (e) {
-    print("Download error: $e");
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Error: $e")),
     );
