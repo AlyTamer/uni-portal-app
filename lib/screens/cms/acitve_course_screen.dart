@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:html/parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_portal_app/functions/cms/cms_web_service.dart';
 import 'package:uni_portal_app/widgets/content_download_tile_widget.dart';
 import 'package:uni_portal_app/widgets/gradient_titles.dart';
-
+import 'package:html/dom.dart' as dom; // <-- add this
 import '../login_screen.dart';
 
 class ActiveCourse extends StatefulWidget {
@@ -19,6 +20,7 @@ class ActiveCourse extends StatefulWidget {
 
 class _ActiveCourseState extends State<ActiveCourse> {
 List<String> allAnnouncements = [];
+List<Map<String, String>> downloadableMaterials = [];
 bool isLoading = true;
 bool showAll= false;
   @override
@@ -29,9 +31,60 @@ bool showAll= false;
   }
 Future<void> _loadData() async {
   final cms = CmsService();
-  final anns = await cms.fetchAnnouncements(widget.courseUrl);
+
+  final html = await cms.fetchCourseHtml(widget.courseUrl);
+  final doc = parse(html);
+
+  // ===== Parse announcements =====
+  final annContainer = doc.querySelector('#ContentPlaceHolderright_ContentPlaceHoldercontent_desc');
+  final anns = annContainer != null
+      ? annContainer.text
+      .split('\n')
+      .map<String>((line) => line.trim())
+      .where((line) => line.isNotEmpty)
+      .toList()
+      : <String>[];
+
+  // ===== Parse downloadable materials =====
+  final contentBlocks = doc.querySelectorAll('div[id^="content"]');
+  final List<Map<String, String>> materials = [];
+
+  for (final block in contentBlocks) {
+    // Get display title from <strong>
+    final strongElement = block.querySelector('strong');
+    if (strongElement == null) continue;
+
+    String filename = strongElement.text.trim();
+
+    // Remove course code prefix
+    filename = filename.replaceFirst(RegExp(r'^\(\|.*?\|\)\s*'), '').trim();
+    // Remove number prefix like "1 - "
+    filename = filename.replaceFirst(RegExp(r'^\d+\s*-\s*'), '').trim();
+
+    // Get href from the download link in the next section
+    final linkElement = block.nextElementSibling
+        ?.nextElementSibling
+        ?.querySelector('a#download');
+    final href = linkElement?.attributes['href']?.trim() ?? '';
+
+    // Skip videos
+    if (filename.toLowerCase().endsWith('.mp4') ||
+        filename.toLowerCase().endsWith('.m4v')) {
+      continue;
+    }
+
+    // Add valid items
+    if (filename.isNotEmpty && href.isNotEmpty) {
+      materials.add({
+        'title': filename,
+        'href': href,
+      });
+    }
+  }
+
   setState(() {
     allAnnouncements = anns;
+    downloadableMaterials = materials;
     isLoading = false;
   });
 }
@@ -133,18 +186,9 @@ Future<void> _loadData() async {
                 ),
               ),
             ),
-            title: ShaderMask(
-              shaderCallback: (bounds) => LinearGradient(
-                colors: [Colors.purple, Colors.pink, Colors.blueAccent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-              child: Text(
-               willOverflow(widget.courseName,MediaQuery.of(context).size.width * 0.6,Theme.of(context).textTheme.titleLarge!.copyWith(fontSize: 17))?codeOnly: cleaned,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 20),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+            title: GradientTitle(size: 18,text:
+             codeOnly,
+
             ),
             titleSpacing: 120,
 
@@ -159,8 +203,7 @@ Future<void> _loadData() async {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        GradientTitle(text: "Announcements"),
-                        if (allAnnouncements.length > 4)
+                        GradientTitle(text: "Announcements",size:30),
                           TextButton(
                             onPressed: () {
                               setState(() {
@@ -233,11 +276,13 @@ Future<void> _loadData() async {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    GradientTitle(text:"Materials"),
+                    GradientTitle(text:"Materials",size:30),
                     const SizedBox(height: 8),
                     ShaderMask(
                       shaderCallback: (bounds) => LinearGradient(
-                        colors: [Colors.purple, Colors.pink, Colors.blueAccent],
+                        colors: [Color.fromRGBO(104, 24, 131, 1.0), Color.fromRGBO(
+                            113, 0, 0, 1.0), Color.fromRGBO(
+                            0, 49, 124, 1.0)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
@@ -257,9 +302,15 @@ Future<void> _loadData() async {
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                       (context, idx) {
-                    return DownloadTile(title: (idx + 1).toString());
+                    final item =downloadableMaterials[idx];
+                        return DownloadTile(
+                            title: item['title']!,
+                        href: item['href']!,
+                        onDownload: () async {
+                          await downloadFile(context,item['href']!, item['title']!);
+                        });
                   },
-                  childCount: 20,
+                  childCount: downloadableMaterials.length,
                 ),
               ),
             ],

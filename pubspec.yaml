@@ -31,10 +31,14 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^0.13.6
-  ntlm: ^2.0.1
+  ntlm:
+    path: lib/external/ntlm
   html: ^0.15.4
   webview_flutter: ^4.4.2
   shared_preferences: ^2.5.3
+  path_provider: ^2.0.15
+  open_file: ^3.2.1
+  permission_handler: ^11.3.0
 
 
   # The following adds the Cupertino Icons font to your application.

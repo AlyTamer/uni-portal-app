@@ -1,22 +1,32 @@
+import 'package:flutter/material.dart';
 import 'package:ntlm/ntlm.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:html/parser.dart' as parser;
-import 'package:html/dom.dart';
+import 'package:html/dom.dart' as dom;
 import 'dart:io';
+import 'package:permission_handler/permission_handler.dart';
 
 class CmsService {
   Future<NTLMClient> _createClient() async {
     final prefs = await SharedPreferences.getInstance();
-    final username = prefs.getString('savedUsername') ?? '';
+    final username = prefs.getString('savedUsername')?.toLowerCase() ?? '';
     final password = prefs.getString('savedPassword') ?? '';
     print("DEBUG: Using username: $username");
     print("DEBUG: Using password: ${password}");
 
-    return NTLMClient(
-      domain: 'guc.edu.eg',
-      username: username,
-      password: password,
-    );
+    try {
+      print('attempting to create NTLM client');
+      return NTLMClient(
+        domain: 'guc.edu.eg',
+        username: username,
+        password: password,
+      );
+    } on Exception catch (e) {
+      print('Failed to create NTLM client: $e');
+      throw Exception('Failed to create NTLM client');
+    }
   }
 
   Future<List<Map<String, dynamic>>> fetchCourses() async {
@@ -44,7 +54,7 @@ class CmsService {
       if (titleMatch != null) {
         String seasonTitle = titleMatch.group(1)!.trim();
 
-        Element? parent = seasonEl.parent;
+        dom.Element? parent = seasonEl.parent;
         while (parent != null && !parent.classes.contains('card')) {
           parent = parent.parent;
         }
@@ -111,4 +121,84 @@ class CmsService {
     raw = raw.replaceAll(RegExp(r'\s+'), ' ').trim();
     return raw;
   }
+  Future<String> fetchCourseHtml(String courseUrl) async {
+    final client = await _createClient();
+    final response = await client.get(Uri.parse(courseUrl));
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch course HTML');
+    }
+    return response.body;
+  }
+
 }
+Future<void> downloadFile(BuildContext context, String relativePath, String filename) async {
+  try {
+    // Request permission
+    if (Platform.isAndroid) {
+      if (await Permission.manageExternalStorage.isGranted == false) {
+        var status = await Permission.manageExternalStorage.request();
+        if (!status.isGranted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Storage permission denied")),
+          );
+          return;
+        }
+      }
+    }
+
+    // Load credentials
+    final prefs = await SharedPreferences.getInstance();
+    final username = prefs.getString('savedUsername')?.toLowerCase() ?? '';
+    final password = prefs.getString('savedPassword') ?? '';
+
+    // Create NTLM client
+    final client = NTLMClient(
+      domain: 'guc.edu.eg',
+      username: username,
+      password: password,
+    );
+
+    // Build full URL
+    final url = "https://cms.guc.edu.eg$relativePath";
+    print("Downloading from: $url");
+
+    // Fetch file
+    final response = await client.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      // Downloads folder path
+      Directory downloadDir;
+      if (Platform.isAndroid) {
+        downloadDir = Directory("/storage/emulated/0/Download");
+      } else {
+        downloadDir = await getApplicationDocumentsDirectory();
+      }
+
+      // Save file
+      final filePath = "${downloadDir.path}/$filename";
+      final file = File(filePath);
+      await file.writeAsBytes(response.bodyBytes);
+      print("File saved to $filePath");
+
+      // Notify user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Downloaded: $filename")),
+      );
+
+      // Open the file
+      await OpenFile.open(filePath);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed: ${response.statusCode}")),
+      );
+    }
+  } catch (e) {
+    print("Download error: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error: $e")),
+    );
+  }
+}
+
+

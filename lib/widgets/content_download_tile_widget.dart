@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 class DownloadTile extends StatelessWidget {
   final String title;
-  const DownloadTile({super.key, required this.title});
+  final String href;
+  final VoidCallback onDownload;
+  const DownloadTile({super.key,required this.onDownload, required this.title, required this.href});
 
   @override
   Widget build(BuildContext context) {
@@ -13,9 +15,9 @@ class DownloadTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         leading: Icon(Icons.arrow_right_sharp, size: 50, color: Colors.pink),
-        title: Text('PlaceHolder $title'),
+        title: Text('$title'),
         trailing:IconButton(
-           onPressed: () {  },
+           onPressed: onDownload,
           icon: Icon(
               Icons.download,
               size: 35,

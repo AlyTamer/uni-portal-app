@@ -4,7 +4,8 @@ import 'package:uni_portal_app/screens/cms/cms_main_screen.dart';
 import 'package:uni_portal_app/screens/cms/view_all_courses.dart';
 import 'package:uni_portal_app/screens/login_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MainApp());
 }
 
