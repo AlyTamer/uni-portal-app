@@ -104,9 +104,9 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,).createShader(
               Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-        child: RichText(text: TextSpan(text: 'UHub',
+        child: RichText(text: TextSpan(text: 'UniCentral',
           style: TextStyle(color: Colors.white,
-            fontSize: 140, fontWeight: FontWeight.bold,),
+            fontSize: 76, fontWeight: FontWeight.bold,),
         ),
         ),
       ),

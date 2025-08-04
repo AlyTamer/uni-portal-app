@@ -127,10 +127,10 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
                   itemCount: selectedCourses.length,
                   itemBuilder: (context, idx) {
                     return Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(4.0),
                       child: ListTile(
                         title: Text(selectedCourses[idx]['name']!,style: Theme.of(context).textTheme.titleMedium,),
-                        leading: const Icon(Icons.arrow_right, color: Colors.deepPurple,size: 50,),
+                        leading: const Icon(Icons.arrow_right, color: Colors.deepPurple,size: 60,),
                         tileColor: Color.fromRGBO(10, 10, 10, 1),
                         onTap: () {
                           print('Selected course: ${selectedCourses[idx]}');

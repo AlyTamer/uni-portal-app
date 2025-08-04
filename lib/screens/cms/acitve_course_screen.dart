@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_portal_app/functions/cms/cms_web_service.dart';
 import 'package:uni_portal_app/widgets/content_download_tile_widget.dart';
 import 'package:uni_portal_app/widgets/gradient_titles.dart';
+
+import '../login_screen.dart';
 
 class ActiveCourse extends StatefulWidget {
   final String courseName;
@@ -79,19 +82,34 @@ Future<void> _loadData() async {
                 ListTile(
                   leading: const Icon(Icons.home, color: Colors.deepPurple),
                   title: const Text('Home'),
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Navigator.popUntil(context, (route) => route.isFirst),
                 ),
                 SizedBox(height: MediaQuery.of(context).size.height * 0.025),
                 ListTile(
                   leading: const Icon(Icons.search, color: Colors.purpleAccent),
-                  title: const Text('View Previous Courses'),
-                  onTap: () => Navigator.pop(context),
+                  title: const Text('View All Courses'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  }
                 ),
                 SizedBox(height: MediaQuery.of(context).size.height * 0.025),
                 ListTile(
                   leading: const Icon(Icons.logout, color: Colors.red),
                   title: const Text('Logout'),
-                  onTap: () => Navigator.pop(context),
+                  onTap: ()async {
+                    SharedPreferences prefs =
+                    await SharedPreferences.getInstance();
+                    await prefs.remove('savedUsername');
+                    await prefs.remove('savedPassword');
+
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => LoginScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -123,12 +141,13 @@ Future<void> _loadData() async {
               ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
               child: Text(
                willOverflow(widget.courseName,MediaQuery.of(context).size.width * 0.6,Theme.of(context).textTheme.titleLarge!.copyWith(fontSize: 17))?codeOnly: cleaned,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 17),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 20),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             titleSpacing: 120,
+
           ),
           body: CustomScrollView(
             slivers: [
@@ -165,12 +184,16 @@ Future<void> _loadData() async {
                           Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(18.0),
-                              gradient: const LinearGradient(
-                                colors: [Colors.purpleAccent, Colors.pink, Colors.lightBlue],
+                              gradient:  LinearGradient(
+                                colors: [Color.fromRGBO(104, 24, 131, 1.0), Color.fromRGBO(
+                                    113, 0, 0, 1.0), Color.fromRGBO(
+                                    0, 49, 124, 1.0)],
                                 begin: Alignment.topRight,
                                 end: Alignment.centerLeft,
                               ),
+
                             ),
+
                           ),
                           Container(
                             width: double.infinity,
@@ -181,7 +204,7 @@ Future<void> _loadData() async {
                               color: const Color.fromRGBO(1, 1, 1, 1),
                             ),
                             child: allAnnouncements.isEmpty
-                                ? Center(child: Text("No announcements available"))
+                                ? Center(child: Text("No Announcements", style : Theme.of(context).textTheme.titleLarge))
                                 : Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: SingleChildScrollView(
@@ -221,7 +244,10 @@ Future<void> _loadData() async {
                       child: Container(
                         height: 8,
                         width: double.infinity,
-                        color: Colors.white,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.horizontal(left:Radius.circular(20),right: Radius.circular(20)),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),

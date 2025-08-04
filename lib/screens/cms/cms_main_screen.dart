@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_portal_app/widgets/cms_tile_widget.dart';
+
+import '../login_screen.dart';
 
 class CmsHome extends StatelessWidget {
   const CmsHome({super.key});
@@ -55,20 +58,21 @@ class CmsHome extends StatelessWidget {
                 },
               ),
               SizedBox(height: MediaQuery.of(context).size.height * 0.025),
-              ListTile(
-                leading: Icon(Icons.search,color: Colors.purpleAccent,),
-                title: Text('View Previous Courses'),
-                onTap: () {
-                  Navigator.pop(context); // Add your logout logic here
-                },
-              ),
               SizedBox(height: MediaQuery.of(context).size.height * 0.025),
-
               ListTile(
                 leading: Icon(Icons.logout,color: Colors.red,),
                 title: Text('Logout'),
-                onTap: () {
-                  Navigator.pop(context); // Add your logout logic here
+                onTap: () async {
+                  SharedPreferences prefs =
+                  await SharedPreferences.getInstance();
+                  await prefs.remove('savedUsername');
+                  await prefs.remove('savedPassword');
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LoginScreen(),
+                    ),
+                  );
                 },
               ),
             ],

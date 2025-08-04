@@ -21,7 +21,7 @@ class DownloadTile extends StatelessWidget {
               size: 35,
               color: Colors.blueAccent),
         ),
-        tileColor: Color.fromRGBO(23, 23, 23, 1.0),
+        tileColor: Color.fromRGBO(12, 12, 12, 1.0),
       ),
     );
   }
