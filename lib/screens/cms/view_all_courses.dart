@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:uni_portal_app/functions/cms/all_courses_parser.dart';
+import 'package:uni_portal_app/functions/cms/cms_web_service.dart';
 
-import 'acitve_course_screen.dart'; // where fetchCourses() is
+import 'acitve_course_screen.dart';
 
 class ViewAllScreen extends StatefulWidget {
   const ViewAllScreen({super.key});
@@ -11,9 +11,11 @@ class ViewAllScreen extends StatefulWidget {
 }
 
 class _ViewAllScreenState extends State<ViewAllScreen> {
-  List<List<dynamic>> seasonsWithCourses = [];
+  List<Map<String, dynamic>> allCourses = [];
   String? selectedSeason;
-  List<String> selectedCourses = [];
+  List<Map<String, String>> selectedCourses = [];
+  List<String> allSeasons = [];
+
   bool isLoading = true;
 
   @override
@@ -24,11 +26,15 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
 
   Future<void> _loadSeasons() async {
     try {
-      final data = await fetchCourses();
+      final cmsService = CmsService();
+      final data = await cmsService.fetchCourses();
+      print("Fetched courses: $data");
       setState(() {
-        seasonsWithCourses = data;
+        allCourses = data;
+        allSeasons = allCourses.map((c) => c['season'] as String).toSet().toList();
         isLoading = false;
       });
+
     } catch (e) {
       print("Error loading courses: $e");
       setState(() {
@@ -40,11 +46,16 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
   void _onSeasonSelected(String season) {
     setState(() {
       selectedSeason = season;
-      selectedCourses = seasonsWithCourses
-          .firstWhere((element) => element[0] == season)[1]
-          .cast<String>();
+      selectedCourses = allCourses
+          .where((course) => course['season'] == season)
+          .map<Map<String, String>>((c) => {
+        'name': c['name'] as String,
+        'url': c['url'] as String
+      })
+          .toList();
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -94,10 +105,10 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
                       value: selectedSeason,
                       hint: const Text('Select A Season'),
                       dropdownColor: Colors.black,
-                      items: seasonsWithCourses
+                      items: allSeasons
                           .map((season) => DropdownMenuItem(
-                        value: season[0] as String,
-                        child: Text(season[0] as String),
+                        value: season,
+                        child: Text(season),
                       ))
                           .toList(),
                       onChanged: (value) {
@@ -118,13 +129,13 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
                     return Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: ListTile(
-                        title: Text(selectedCourses[idx],style: Theme.of(context).textTheme.titleMedium,),
+                        title: Text(selectedCourses[idx]['name']!,style: Theme.of(context).textTheme.titleMedium,),
                         leading: const Icon(Icons.arrow_right, color: Colors.deepPurple,size: 50,),
                         tileColor: Color.fromRGBO(10, 10, 10, 1),
                         onTap: () {
                           print('Selected course: ${selectedCourses[idx]}');
                           Navigator.push(context,MaterialPageRoute(
-                            builder:(context)=>ActiveCourse(courseName: selectedCourses[idx])
+                            builder:(context)=>ActiveCourse(courseName: selectedCourses[idx]['name']!, courseUrl: selectedCourses[idx]['url']!)
                           ));
                         },
                       ),
