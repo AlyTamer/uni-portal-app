@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:uni_portal_app/functions/mailbox_webview.dart';
+import 'package:uni_portal_app/functions/mailbox/mailbox_webview.dart';
 
 class FullOwaScreen extends StatelessWidget {
   final String username;

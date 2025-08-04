@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uni_portal_app/screens/main_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../functions/webview_util.dart';
+import '../functions/mailbox/webview_util.dart';
 
 
 class LoginScreen extends StatefulWidget {

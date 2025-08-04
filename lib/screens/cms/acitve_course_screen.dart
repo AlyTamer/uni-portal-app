@@ -27,8 +27,20 @@ class _ActiveCourseState extends State<ActiveCourse> {
     );
   }
 
+  bool willOverflow(String text, double maxWidth, TextStyle style) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: maxWidth);
+
+    return painter.didExceedMaxLines;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final codeOnly = RegExp(r'^\|(.*?)\|').firstMatch(widget.courseName)?.group(0) ?? widget.courseName;
+    final cleaned = widget.courseName.replaceFirst(RegExp(r'^\|.*?\|\s*'), '');
     return SafeArea(
       child: Scaffold(
         drawer: Drawer(
@@ -93,20 +105,17 @@ class _ActiveCourseState extends State<ActiveCourse> {
               ),
             ),
           ),
-          title: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: ShaderMask(
-              shaderCallback: (bounds) => LinearGradient(
-                colors: [Colors.purple, Colors.pink, Colors.blueAccent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-              child: Text(
-                widget.courseName,
-                style: Theme.of(context).textTheme.titleLarge,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+          title: ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [Colors.purple, Colors.pink, Colors.blueAccent],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+            child: Text(
+             willOverflow(widget.courseName,MediaQuery.of(context).size.width * 0.6,Theme.of(context).textTheme.titleLarge!.copyWith(fontSize: 17))?codeOnly: cleaned,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 17),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           titleSpacing: 120,

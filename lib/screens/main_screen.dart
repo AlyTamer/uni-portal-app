@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uni_portal_app/screens/cms/view_all_courses.dart';
 import 'package:uni_portal_app/screens/login_screen.dart';
 
-import '../functions/webview_util.dart';
+import '../functions/mailbox/webview_util.dart';
 import '../widgets/app_icon_widget.dart';
 import 'mailbox_screen.dart';
 
@@ -76,68 +77,108 @@ class HomeScreen extends StatelessWidget {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16.0),
-                    color: Color.fromRGBO(30, 30, 30, 1.0),
+                    color: Color.fromRGBO(65, 65, 65, 1.0),
                   ),
                   child: Column(
                     children: [
                       const Spacer(flex:2),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          GestureDetector(
-                            onTap: () async {
-                              await clearWebViewSession();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => FullOwaScreen(
-                                    username: username,
-                                    password: password,
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                              ),
+                              onPressed: () async {
+                                await clearWebViewSession();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FullOwaScreen(
+                                      username: username,
+                                      password: password,
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                            child: InteractiveIcon(
-                              icon: Icons.mail,
-                              iconName: 'Mail',
-                              iconColor: Colors.white,
-                              iconSize: 60,
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {},
-                            child: InteractiveIcon(
-                              icon: Icons.list_alt_rounded,
-                              iconName: 'Sched',
-                              iconSize: 60,
-                              iconColor: Colors.white,
-                            ),
-                          ),
+                                );
+                              },
+                              child: InteractiveIcon(
+                                icon: Icons.mail,
+                                iconName: 'Mail',
+                                iconSize: 60,
+                                iconColor: Colors.white,
+                              ),
 
-                          ElevatedButton(
-                            onPressed: () async {
-                              SharedPreferences prefs =
-                              await SharedPreferences.getInstance();
-                              await prefs.remove('savedUsername');
-                              await prefs.remove('savedPassword');
-                              await clearWebViewSession();
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => LoginScreen(),
-                                ),
-                              );
-                            },
-                            child: InteractiveIcon(
-                              icon: Icons.logout,
-                              iconName: 'Logout',
-                              iconColor: Colors.red,
-                              iconSize: 60,
                             ),
-                          ),
-                        ],
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                              ),
+                              onPressed: () {},
+                              child: InteractiveIcon(
+                                icon: Icons.list_alt_rounded,
+                                iconName: 'Sched',
+                                iconSize: 60,
+                                iconColor: Colors.white,
+                              ),
+                            ),
+
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                              ),
+                              onPressed: () {
+                                Navigator.push(context, MaterialPageRoute(
+                                  builder:(context)=>ViewAllScreen()
+                                ));
+                              },
+                              child: InteractiveIcon(
+                                icon: Icons.content_paste,
+                                iconName: 'CMS',
+                                iconColor: Colors.white,
+                                iconSize: 60,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const Spacer(flex: 3),
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          children: [
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                              ),
+                              onPressed: () async {
+                                SharedPreferences prefs =
+                                await SharedPreferences.getInstance();
+                                await prefs.remove('savedUsername');
+                                await prefs.remove('savedPassword');
+                                await clearWebViewSession();
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LoginScreen(),
+                                  ),
+                                );
+                              },
+                              child: InteractiveIcon(
+                                icon: Icons.logout,
+                                iconName: 'Logout',
+                                iconColor: Colors.red,
+                                iconSize: 60,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer()
                     ],
                   ),
                 ),
