@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uni_portal_app/screens/cms/acitve_course_screen.dart';
 import 'package:uni_portal_app/screens/cms/cms_main_screen.dart';
 import 'package:uni_portal_app/screens/cms/view_all_courses.dart';
 import 'package:uni_portal_app/screens/login_screen.dart';
@@ -18,7 +19,6 @@ class MainApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurpleAccent,
           brightness: Brightness.dark,
-          background: Colors.black,
           surface: Colors.black,),
         textTheme: TextTheme(
           titleLarge: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
@@ -29,7 +29,7 @@ class MainApp extends StatelessWidget {
 
       ),
 
-      home: ViewAllScreen(),
+      home: ActiveCourse(courseName: 'PHolder 000'),
     );
   }
 }
