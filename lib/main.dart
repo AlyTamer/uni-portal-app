@@ -3,6 +3,7 @@ import 'package:uni_portal_app/screens/cms/acitve_course_screen.dart';
 import 'package:uni_portal_app/screens/cms/cms_main_screen.dart';
 import 'package:uni_portal_app/screens/cms/view_all_courses.dart';
 import 'package:uni_portal_app/screens/login_screen.dart';
+import 'package:uni_portal_app/screens/schedule_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,7 +42,7 @@ class MainApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginScreen(),
+      home: LoginScreen(),
     );
   }
 }

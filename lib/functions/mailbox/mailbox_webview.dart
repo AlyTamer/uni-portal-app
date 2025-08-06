@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:uni_portal_app/screens/main_screen.dart'; // needed for back override
+import 'package:uni_portal_app/screens/home_screen.dart'; // needed for back override
 
 class OwaWebView extends StatefulWidget {
   final String username;
