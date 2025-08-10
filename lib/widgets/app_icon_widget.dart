@@ -22,7 +22,7 @@ class InteractiveIcon extends StatelessWidget {
       color: iconColor == Colors.transparent ? Colors.white : iconColor,
     );
 
-    // If iconColor is transparent, wrap in ShaderMask
+
     if (iconColor == Colors.transparent) {
       iconWidget = ShaderMask(
         shaderCallback: (bounds) => const LinearGradient(
@@ -32,11 +32,11 @@ class InteractiveIcon extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ).createShader(bounds),
-        blendMode: BlendMode.srcIn, // Fill icon shape with gradient
+        blendMode: BlendMode.srcIn,
         child: Icon(
           icon,
           size: iconSize,
-          color: Colors.white, // important: acts as mask
+          color: Colors.white,
         ),
       );
     }

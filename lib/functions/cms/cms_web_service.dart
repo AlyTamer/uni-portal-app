@@ -133,7 +133,6 @@ class CmsService {
 }
 Future<void> downloadFile(BuildContext context, String relativePath, String filename) async {
   try {
-    // Request permission
     if (Platform.isAndroid) {
       if (await Permission.manageExternalStorage.isGranted == false) {
         var status = await Permission.manageExternalStorage.request();
@@ -146,27 +145,21 @@ Future<void> downloadFile(BuildContext context, String relativePath, String file
       }
     }
 
-    // Load credentials
     final prefs = await SharedPreferences.getInstance();
     final username = prefs.getString('savedUsername')?.toLowerCase() ?? '';
     final password = prefs.getString('savedPassword') ?? '';
 
-    // Create NTLM client
     final client = NTLMClient(
       domain: 'guc.edu.eg',
       username: username,
       password: password,
     );
 
-    // Build full URL
     final url = "https://cms.guc.edu.eg$relativePath";
 
-
-    // Fetch file
     final response = await client.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
-      // Downloads folder path
       Directory downloadDir;
       if (Platform.isAndroid) {
         downloadDir = Directory("/storage/emulated/0/Download");
@@ -174,13 +167,10 @@ Future<void> downloadFile(BuildContext context, String relativePath, String file
         downloadDir = await getApplicationDocumentsDirectory();
       }
 
-      // Save file
       final filePath = "${downloadDir.path}/$filename";
       final file = File(filePath);
       await file.writeAsBytes(response.bodyBytes);
 
-
-      // Notify user
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text("Downloaded: $filename",
@@ -188,8 +178,6 @@ Future<void> downloadFile(BuildContext context, String relativePath, String file
         ),
         backgroundColor: Colors.deepPurple,),
       );
-
-      // Open the file
       await OpenFile.open(filePath);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

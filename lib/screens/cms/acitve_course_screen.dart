@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_portal_app/functions/cms/cms_web_service.dart';
 import 'package:uni_portal_app/widgets/content_download_tile_widget.dart';
 import 'package:uni_portal_app/widgets/gradient_titles.dart';
-import 'package:html/dom.dart' as dom; // <-- add this
+import 'package:html/dom.dart' as dom;
 import '../login_screen.dart';
 
 class ActiveCourse extends StatefulWidget {
@@ -35,7 +35,6 @@ Future<void> _loadData() async {
   final html = await cms.fetchCourseHtml(widget.courseUrl);
   final doc = parse(html);
 
-  // ===== Parse announcements =====
   final annContainer = doc.querySelector('#ContentPlaceHolderright_ContentPlaceHoldercontent_desc');
   final anns = annContainer != null
       ? annContainer.text
@@ -45,35 +44,33 @@ Future<void> _loadData() async {
       .toList()
       : <String>[];
 
-  // ===== Parse downloadable materials =====
   final contentBlocks = doc.querySelectorAll('div[id^="content"]');
   final List<Map<String, String>> materials = [];
 
   for (final block in contentBlocks) {
-    // Get display title from <strong>
+
     final strongElement = block.querySelector('strong');
     if (strongElement == null) continue;
 
     String filename = strongElement.text.trim();
 
-    // Remove course code prefix
+
     filename = filename.replaceFirst(RegExp(r'^\(\|.*?\|\)\s*'), '').trim();
-    // Remove number prefix like "1 - "
+
     filename = filename.replaceFirst(RegExp(r'^\d+\s*-\s*'), '').trim();
 
-    // Get href from the download link in the next section
+
     final linkElement = block.nextElementSibling
         ?.nextElementSibling
         ?.querySelector('a#download');
     final href = linkElement?.attributes['href']?.trim() ?? '';
 
-    // Skip videos
+
     if (filename.toLowerCase().endsWith('.mp4') ||
         filename.toLowerCase().endsWith('.m4v')) {
       continue;
     }
 
-    // Add valid items
     if (filename.isNotEmpty && href.isNotEmpty) {
       materials.add({
         'title': filename,
@@ -104,7 +101,6 @@ Future<void> _loadData() async {
   @override
   Widget build(BuildContext context) {
     final codeOnly = RegExp(r'^\|(.*?)\|').firstMatch(widget.courseName)?.group(0) ?? widget.courseName;
-    final cleaned = widget.courseName.replaceFirst(RegExp(r'^\|.*?\|\s*'), '');
     return WillPopScope(
       onWillPop: () async {
         if(showAll){

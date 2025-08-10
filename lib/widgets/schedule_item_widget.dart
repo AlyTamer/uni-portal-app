@@ -32,13 +32,13 @@ class SchedTile extends StatelessWidget {
           begin: Alignment.topRight,
           end: Alignment.centerLeft,
         ),
-        borderRadius: BorderRadius.circular(12), // rounded outer border
+        borderRadius: BorderRadius.circular(12),
       ),
-      padding: const EdgeInsets.all(3), // thickness of the outline
+      padding: const EdgeInsets.all(3),
       child: Container(
         decoration: BoxDecoration(
           color: const Color.fromRGBO(35, 19, 64, 1.0),
-          borderRadius: BorderRadius.circular(9), // slightly smaller
+          borderRadius: BorderRadius.circular(9),
         ),
         child: Stack(
           children: [

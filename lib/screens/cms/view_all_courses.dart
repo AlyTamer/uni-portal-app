@@ -121,7 +121,7 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Course list for selected season
+
               Expanded(
                 child: ListView.builder(
                   itemCount: selectedCourses.length,
