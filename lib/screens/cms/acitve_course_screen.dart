@@ -3,6 +3,7 @@ import 'package:html/parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_portal_app/functions/cms/cms_web_service.dart';
 import 'package:uni_portal_app/widgets/content_download_tile_widget.dart';
+import 'package:uni_portal_app/widgets/custom_drawer_widget.dart';
 import 'package:uni_portal_app/widgets/gradient_titles.dart';
 import 'package:html/dom.dart' as dom;
 import '../login_screen.dart';
@@ -116,64 +117,7 @@ Future<void> _loadData() async {
         child: Center(
           child: isLoading? CircularProgressIndicator():
           Scaffold(
-            drawer: Drawer(
-              backgroundColor: const Color.fromRGBO(11, 11, 11, 1),
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  SizedBox(
-                    width: 150,
-                    height: 70,
-                    child: DrawerHeader(
-                      decoration: const BoxDecoration(color: Colors.black87),
-                      child: ShaderMask(
-                        shaderCallback: (bounds) => LinearGradient(
-                          colors: [Colors.purple, Colors.pink, Colors.blueAccent],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-                        child: Text(
-                          'Menu',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                      ),
-                    ),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.home, color: Colors.deepPurple),
-                    title: const Text('Home'),
-                    onTap: () => Navigator.popUntil(context, (route) => route.isFirst),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.025),
-                  ListTile(
-                    leading: const Icon(Icons.search, color: Colors.purpleAccent),
-                    title: const Text('View All Courses'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                    }
-                  ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.025),
-                  ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text('Logout'),
-                    onTap: ()async {
-                      SharedPreferences prefs =
-                      await SharedPreferences.getInstance();
-                      await prefs.remove('savedUsername');
-                      await prefs.remove('savedPassword');
-
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => LoginScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+            drawer: CustomDrawerWidget(),
             appBar: AppBar(
               elevation: 0,
               scrolledUnderElevation: 0,

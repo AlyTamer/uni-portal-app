@@ -55,7 +55,7 @@ class InteractiveIcon extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           iconName,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
         ),
       ],
     );

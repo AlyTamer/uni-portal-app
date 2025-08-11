@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_portal_app/widgets/cms_tile_widget.dart';
-
-import '../login_screen.dart';
+import 'package:uni_portal_app/widgets/custom_drawer_widget.dart';
 
 class CmsHome extends StatelessWidget {
   const CmsHome({super.key});
@@ -11,73 +9,7 @@ class CmsHome extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        drawer: Drawer(
-          backgroundColor: Color.fromRGBO(11,11,11,1),
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              Container(
-                width: 150,
-                height: 70,
-                child: DrawerHeader(
-                  decoration: BoxDecoration(color: Colors.black87),
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        WidgetSpan(
-                          child: ShaderMask(
-                            shaderCallback: (bounds) => LinearGradient(
-                              colors: [
-                                Colors.purple,
-                                Colors.pink,
-                                Colors.blueAccent,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ).createShader(
-                              Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-                            ),
-                            child: RichText(
-                              text: TextSpan(
-                                text: 'Menu',
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: Icon(Icons.home,color: Colors.deepPurple,),
-                title: Text('Home'),
-                onTap: () {
-                  Navigator.pop(context); // Close drawer
-                },
-              ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.025),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.025),
-              ListTile(
-                leading: Icon(Icons.logout,color: Colors.red,),
-                title: Text('Logout'),
-                onTap: () async {
-                  SharedPreferences prefs =
-                  await SharedPreferences.getInstance();
-                  await prefs.remove('savedUsername');
-                  await prefs.remove('savedPassword');
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => LoginScreen(),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
+        drawer: CustomDrawerWidget(),
         appBar: AppBar(
           leading: Builder(
             builder: (context) => Container(

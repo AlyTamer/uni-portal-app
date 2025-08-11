@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/gradient_titles.dart';
-import '../widgets/view_grade_screen.dart';
+import '../../widgets/gradient_titles.dart';
+import '../../widgets/view_grade_screen.dart';
 
 class GradeScreen extends StatefulWidget {
   const GradeScreen({super.key});
