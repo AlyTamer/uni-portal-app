@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_portal_app/functions/cms/cms_web_service.dart';
 import 'package:uni_portal_app/widgets/content_download_tile_widget.dart';
 import 'package:uni_portal_app/widgets/gradient_titles.dart';
-import 'package:html/dom.dart' as dom;
 import '../login_screen.dart';
 
 class ActiveCourse extends StatefulWidget {
@@ -263,7 +262,7 @@ Future<void> _loadData() async {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: (showAll ? allAnnouncements : allAnnouncements.take(4))
                                         .map((ann) => Container(
-                                        margin: const EdgeInsets.symmetric(vertical: 3.0), // more space between announcements
+                                        margin: const EdgeInsets.symmetric(vertical: 3.0),
                                         padding: const EdgeInsets.all(8.0),
                                         decoration: BoxDecoration(
                                           color: Color.fromRGBO(18,18,18,1),

@@ -54,7 +54,7 @@ class CmsHome extends StatelessWidget {
                 leading: Icon(Icons.home,color: Colors.deepPurple,),
                 title: Text('Home'),
                 onTap: () {
-                  Navigator.pop(context); // Close drawer
+                  Navigator.pop(context);
                 },
               ),
               SizedBox(height: MediaQuery.of(context).size.height * 0.025),
@@ -180,7 +180,7 @@ class CmsHome extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16.0),
 
-                    color: const Color.fromRGBO(90, 90, 90, 1.0), // base dark tone
+                    color: const Color.fromRGBO(90, 90, 90, 1.0),
                   ),
 
                   height: 500,

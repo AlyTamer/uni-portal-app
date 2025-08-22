@@ -176,7 +176,7 @@ class HomeScreen extends StatelessWidget {
                child:Container(
                    decoration: BoxDecoration(
                      color: const Color.fromRGBO(0, 0, 0, 1.0),
-                     borderRadius: BorderRadius.circular(9), // slightly smaller
+                     borderRadius: BorderRadius.circular(9),
                    ),
                  child:Padding(
                    padding: const EdgeInsets.all(8.0),
@@ -323,7 +323,7 @@ class HomeScreen extends StatelessWidget {
                    child:Container(
                      decoration: BoxDecoration(
                        color: Colors.transparent,
-                       borderRadius: BorderRadius.circular(9), // slightly smaller
+                       borderRadius: BorderRadius.circular(9),
                      ),
                      child: Row(
                        mainAxisAlignment: MainAxisAlignment.center,
@@ -358,7 +358,7 @@ class HomeScreen extends StatelessWidget {
                    child:Container(
                      decoration: BoxDecoration(
                        color:  Colors.transparent,
-                       borderRadius: BorderRadius.circular(9), // slightly smaller
+                       borderRadius: BorderRadius.circular(9),
                      ),
                      child: Center(
                         //TODO implement Dynamic Exam Count
@@ -392,7 +392,7 @@ class HomeScreen extends StatelessWidget {
                 child:Container(
                   decoration: BoxDecoration(
                     color: const Color.fromRGBO(0, 0, 0, 1.0),
-                    borderRadius: BorderRadius.circular(9), // slightly smaller
+                    borderRadius: BorderRadius.circular(9),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
