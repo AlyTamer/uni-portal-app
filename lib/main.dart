@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:uni_portal_app/screens/grades/transcript_screen.dart';
 import 'package:uni_portal_app/screens/login_screen.dart';
-
-import 'package:uni_portal_app/screens/schedule/other_schedule_screen.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
