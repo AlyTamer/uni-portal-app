@@ -8,7 +8,7 @@
 
 
     <application
-        android:label="uni_portal_app"
+        android:label="UHub"
         android:icon="@mipmap/ic_launcher">
 
         <activity

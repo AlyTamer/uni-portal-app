@@ -1,6 +1,6 @@
 {
-    "name": "uni_portal_app",
-    "short_name": "uni_portal_app",
+    "name": "UHub",
+    "short_name": "UHub",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
