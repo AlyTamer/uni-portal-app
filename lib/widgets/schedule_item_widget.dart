@@ -73,7 +73,7 @@ class SchedTile extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // Slot number
+
             Positioned(
               left: 10, top: 10,
               child: ShaderMask(
@@ -90,7 +90,6 @@ class SchedTile extends StatelessWidget {
               ),
             ),
 
-            // Title (first item only, from parser)
             Positioned(
               top: 5, left: 50, right: 120,
               child: Text(
@@ -101,7 +100,6 @@ class SchedTile extends StatelessWidget {
               ),
             ),
 
-            // Course (first item only)
             Positioned(
               top: 47, left: 50, right: 120,
               child: Text(
@@ -112,7 +110,6 @@ class SchedTile extends StatelessWidget {
               ),
             ),
 
-            // Time
             Positioned(
               top: 10, right: 15,
               child: Text(
@@ -123,7 +120,6 @@ class SchedTile extends StatelessWidget {
               ),
             ),
 
-            // Room (first item)
             Positioned(
               top: 30, right: 15,
               child: Text(
@@ -145,7 +141,6 @@ class SchedTile extends StatelessWidget {
 
               ),
 
-            // Badge: “+N more”
             if (_hasMultiple)
               Positioned(
                 top:-1, right: -1.4,
@@ -205,7 +200,6 @@ class SchedTile extends StatelessWidget {
                       style: Theme.of(ctx).textTheme.titleMedium),
                   const SizedBox(height: 12),
 
-                  // Header row
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
@@ -228,7 +222,6 @@ class SchedTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
 
-                  // Items list
                   Expanded(
                     child: ListView.separated(
                       itemCount: list.length,

@@ -75,16 +75,42 @@ class ScheduleService {
 
 
   Future<Map<String, List<ScheduleSlot>>> fetchSchedule() async {
-    final html = await _fetchGroupScheduleHtml();
-    return _parseGroupSchedule(html);
+    final prefs = await SharedPreferences.getInstance();
+    const cacheKey = 'cache_schedule_group_html';
+    const cacheTimeKey = 'cache_schedule_group_time';
+
+    try {
+      final html = await _fetchGroupScheduleHtml(); // your existing network method
+      // save cache
+      await prefs.setString(cacheKey, html);
+      await prefs.setInt(cacheTimeKey, DateTime.now().millisecondsSinceEpoch);
+
+      return _parseGroupSchedule(html);
+    } catch (e) {
+      // try fresh cache (< 6h)
+      final cached = prefs.getString(cacheKey);
+      final ts = prefs.getInt(cacheTimeKey) ?? 0;
+      final ageMs = DateTime.now().millisecondsSinceEpoch - ts;
+
+      if (cached != null && ageMs < const Duration(hours: 6).inMilliseconds) {
+        return _parseGroupSchedule(cached);
+      }
+      // stale fallback (older than 6h) – still show something if available
+      if (cached != null) {
+        return _parseGroupSchedule(cached);
+      }
+
+      rethrow; // nothing cached at all
+    }
   }
 
 
   Future<SearchLists> fetchSearchLists() async {
-    final ntlm = await _createClient();
-    final uri = Uri.parse('https://apps.guc.edu.eg/student_ext/Scheduling/SearchAcademicScheduled_001.aspx');
+    final prefs = await SharedPreferences.getInstance();
+    const cacheKey = 'cache_sched_search_html';
+    const cacheTimeKey = 'cache_sched_search_time';
 
-    // Mimic a desktop browser so the page returns the script with arrays.
+    // same headers you already used
     const headers = {
       'User-Agent':
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -94,32 +120,64 @@ class ScheduleService {
       'Connection': 'keep-alive',
     };
 
-    final resp = await ntlm.get(uri, headers: headers);
-    final html = resp.body;
+    try {
+      final ntlm = await _createClient();
+      final uri = Uri.parse('https://apps.guc.edu.eg/student_ext/Scheduling/SearchAcademicScheduled_001.aspx');
+      final resp = await ntlm.get(uri, headers: headers);
+      final html = resp.body;
 
-    if (kDebugMode) {
-      final title = parser.parse(html).querySelector('title')?.text ?? '(no title)';
-      final snippet = html.substring(0, html.length > 600 ? 600 : html.length);
-      debugPrint('NTLM fetch -> status: ${resp.statusCode}, title: $title');
-      debugPrint('HTML head snippet:\n$snippet');
+      if (resp.statusCode != 200 || !_pageHasArrays(html)) {
+        throw StateError('Could not locate courses/tas arrays in response HTML');
+      }
+
+      // cache
+      await prefs.setString(cacheKey, html);
+      await prefs.setInt(cacheTimeKey, DateTime.now().millisecondsSinceEpoch);
+
+      // parse
+      final coursesRaw = _extractJsArray(html: html, variableName: 'courses')!;
+      final tasRaw     = _extractJsArray(html: html, variableName: 'tas')!;
+      final courses    = _parseJsObjectsArray(coursesRaw);
+      final staff      = _parseJsObjectsArray(tasRaw);
+
+      final coursesTagged = courses.map((c) {
+        final ty = _inferTypeForName(c.value);
+        return SearchItem(id: c.id, value: ty.isNotEmpty ? '${c.value} ($ty)' : c.value);
+      }).toList();
+
+      return SearchLists(courses: coursesTagged, staff: staff);
+    } catch (e) {
+      final cached = prefs.getString(cacheKey);
+      final ts = prefs.getInt(cacheTimeKey) ?? 0;
+      final ageMs = DateTime.now().millisecondsSinceEpoch - ts;
+
+      if (cached != null && ageMs < const Duration(hours: 6).inMilliseconds) {
+        final coursesRaw = _extractJsArray(html: cached, variableName: 'courses')!;
+        final tasRaw     = _extractJsArray(html: cached, variableName: 'tas')!;
+        final courses    = _parseJsObjectsArray(coursesRaw);
+        final staff      = _parseJsObjectsArray(tasRaw);
+        final coursesTagged = courses.map((c) {
+          final ty = _inferTypeForName(c.value);
+          return SearchItem(id: c.id, value: ty.isNotEmpty ? '${c.value} ($ty)' : c.value);
+        }).toList();
+        return SearchLists(courses: coursesTagged, staff: staff);
+      }
+
+      // stale fallback
+      if (cached != null) {
+        final coursesRaw = _extractJsArray(html: cached, variableName: 'courses')!;
+        final tasRaw     = _extractJsArray(html: cached, variableName: 'tas')!;
+        final courses    = _parseJsObjectsArray(coursesRaw);
+        final staff      = _parseJsObjectsArray(tasRaw);
+        final coursesTagged = courses.map((c) {
+          final ty = _inferTypeForName(c.value);
+          return SearchItem(id: c.id, value: ty.isNotEmpty ? '${c.value} ($ty)' : c.value);
+        }).toList();
+        return SearchLists(courses: coursesTagged, staff: staff);
+      }
+
+      rethrow;
     }
-
-    if (resp.statusCode != 200 || !_pageHasArrays(html)) {
-      throw StateError('Could not locate courses/tas arrays in response HTML');
-    }
-
-    final coursesRaw = _extractJsArray(html: html, variableName: 'courses')!;
-    final tasRaw     = _extractJsArray(html: html, variableName: 'tas')!;
-
-    final courses = _parseJsObjectsArray(coursesRaw);
-    final staff   = _parseJsObjectsArray(tasRaw);
-    final coursesTagged = courses.map((c) {
-      final ty = _inferTypeForName(c.value);
-      return SearchItem(id: c.id, value: ty.isNotEmpty ? '${c.value} ($ty)' : c.value);
-    }).toList();
-
-    return SearchLists(courses: coursesTagged, staff: staff);
-
   }
 
 
@@ -333,11 +391,16 @@ class ScheduleService {
     List<String> courseIds = const [],
     List<String> staffIds  = const [],
   }) async {
-    final client = await _createClient();
-    final uri = Uri.parse(
-      'https://apps.guc.edu.eg/student_ext/Scheduling/SearchAcademicScheduled_001.aspx',
-    );
+    final prefs = await SharedPreferences.getInstance();
 
+    // Build a stable key for this particular query (IDs order matters; you can sort if you prefer)
+    final queryKeyRaw = 'courses=${courseIds.join(",")}__staff=${staffIds.join(",")}';
+    final queryKey = base64Url.encode(utf8.encode(queryKeyRaw));
+
+    final cacheKey = 'cache_acad_html_$queryKey';
+    final cacheTimeKey = 'cache_acad_time_$queryKey';
+
+    // headers you already used on the page
     const headers = {
       'User-Agent':
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -347,48 +410,71 @@ class ScheduleService {
       'Connection': 'keep-alive',
     };
 
-    // 1) GET page to capture tokens
-    final getResp = await client.get(uri, headers: headers);
-    if (getResp.statusCode != 200) {
-      throw HttpException('GET Academic Schedule returned ${getResp.statusCode}');
+    try {
+      final client = await _createClient();
+      final uri = Uri.parse('https://apps.guc.edu.eg/student_ext/Scheduling/SearchAcademicScheduled_001.aspx');
+
+      // 1) GET to capture tokens
+      final getResp = await client.get(uri, headers: headers);
+      if (getResp.statusCode != 200) {
+        throw HttpException('GET Academic Schedule returned ${getResp.statusCode}');
+      }
+      final getDoc = parser.parse(getResp.body);
+      final viewState  = getDoc.querySelector('#__VIEWSTATE')?.attributes['value'] ?? '';
+      final viewGen    = getDoc.querySelector('#__VIEWSTATEGENERATOR')?.attributes['value'] ?? '';
+      final eventValid = getDoc.querySelector('#__EVENTVALIDATION')?.attributes['value'] ?? '';
+      if (viewState.isEmpty || eventValid.isEmpty) {
+        throw StateError('Missing form tokens (__VIEWSTATE / __EVENTVALIDATION)');
+      }
+
+      // 2) POST Show Schedule with selections
+      final body = _buildFormBody(
+        singles: {
+          '__EVENTTARGET': '',
+          '__EVENTARGUMENT': '',
+          '__VIEWSTATE': viewState,
+          '__VIEWSTATEGENERATOR': viewGen,
+          '__EVENTVALIDATION': eventValid,
+          r'ctl00$ctl00$ContentPlaceHolderright$ContentPlaceHoldercontent$B_ShowSchedule': 'Show Schedule',
+        },
+        courseIds: courseIds,
+        staffIds: staffIds,
+      );
+
+      final postResp = await client.post(
+        uri,
+        headers: {
+          ...headers,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: body,
+      );
+      if (postResp.statusCode != 200) {
+        throw HttpException('POST Academic Schedule returned ${postResp.statusCode}');
+      }
+
+      // cache the result HTML
+      await prefs.setString(cacheKey, postResp.body);
+      await prefs.setInt(cacheTimeKey, DateTime.now().millisecondsSinceEpoch);
+
+      return _parseAcademicSchedule(postResp.body);
+    } catch (e) {
+      final cached = prefs.getString(cacheKey);
+      final ts = prefs.getInt(cacheTimeKey) ?? 0;
+      final ageMs = DateTime.now().millisecondsSinceEpoch - ts;
+
+      if (cached != null && ageMs < const Duration(hours: 6).inMilliseconds) {
+        return _parseAcademicSchedule(cached);
+      }
+      // stale fallback (older than 6h) – still show something if available
+      if (cached != null) {
+        return _parseAcademicSchedule(cached);
+      }
+
+      rethrow;
     }
-    final getDoc = parser.parse(getResp.body);
-    final viewState  = getDoc.querySelector('#__VIEWSTATE')?.attributes['value'] ?? '';
-    final viewGen    = getDoc.querySelector('#__VIEWSTATEGENERATOR')?.attributes['value'] ?? '';
-    final eventValid = getDoc.querySelector('#__EVENTVALIDATION')?.attributes['value'] ?? '';
-    if (viewState.isEmpty || eventValid.isEmpty) {
-      throw StateError('Missing form tokens (__VIEWSTATE / __EVENTVALIDATION)');
-    }
-
-    // 2) POST "Show Schedule" with selections
-    final body = _buildFormBody(
-      singles: {
-        '__EVENTTARGET': '',
-        '__EVENTARGUMENT': '',
-        '__VIEWSTATE': viewState,
-        '__VIEWSTATEGENERATOR': viewGen,
-        '__EVENTVALIDATION': eventValid,
-
-        // This is the submit name of the "Show Schedule" button on that page
-        r'ctl00$ctl00$ContentPlaceHolderright$ContentPlaceHoldercontent$B_ShowSchedule': 'Show Schedule',      },
-      courseIds: courseIds,
-      staffIds: staffIds,
-    );
-
-    final postResp = await client.post(
-      uri,
-      headers: {
-        ...headers,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: body,
-    );
-    if (postResp.statusCode != 200) {
-      throw HttpException('POST Academic Schedule returned ${postResp.statusCode}');
-    }
-
-    return _parseAcademicSchedule(postResp.body);
   }
+
 
 // Build x-www-form-urlencoded with repeated fields course[] / ta[]
   String _buildFormBody({

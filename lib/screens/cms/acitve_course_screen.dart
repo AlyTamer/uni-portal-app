@@ -1,11 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:open_file/open_file.dart';
 import 'package:uni_portal_app/functions/cms/cms_web_service.dart';
 import 'package:uni_portal_app/widgets/content_download_tile_widget.dart';
 import 'package:uni_portal_app/widgets/custom_drawer_widget.dart';
 import 'package:uni_portal_app/widgets/gradient_titles.dart';
-import '../login_screen.dart';
 
 class ActiveCourse extends StatefulWidget {
   final String courseName;
@@ -29,9 +30,28 @@ bool showAll= false;
     _loadData();
 
   }
+bool _looksLikeVideo(String title, String href) {
+  final t = title.toLowerCase();
+  final h = href.toLowerCase();
+  const videoKeywords = ['video', 'vod', 'vods', 'lecture recording', 'recording'];
+  const videoExts = ['.mp4', '.m4v', '.mov', '.webm', '.mkv', '.avi'];
+  final last = Uri.tryParse(h)?.pathSegments.last.toLowerCase() ?? '';
+  final hasKeyword = videoKeywords.any((k) => t.contains(k) || last.contains(k));
+  final hasExt = videoExts.any((ext) => t.endsWith(ext) || last.endsWith(ext));
+  final pathSignals = h.contains('/vod') || h.contains('video');
+  return hasKeyword || hasExt || pathSignals;
+}
+Future<String?> _findExistingLocalPath(String href) async {
+  final remembered = await getRememberedDownloadedPath(href);
+  if (remembered != null && remembered.isNotEmpty) {
+    final f = File(remembered);
+    if (await f.exists()) return remembered;
+  }
+  return null;
+}
+
 Future<void> _loadData() async {
   final cms = CmsService();
-
   final html = await cms.fetchCourseHtml(widget.courseUrl);
   final doc = parse(html);
 
@@ -43,40 +63,31 @@ Future<void> _loadData() async {
       .where((line) => line.isNotEmpty)
       .toList()
       : <String>[];
-
   final contentBlocks = doc.querySelectorAll('div[id^="content"]');
   final List<Map<String, String>> materials = [];
 
   for (final block in contentBlocks) {
-
     final strongElement = block.querySelector('strong');
     if (strongElement == null) continue;
 
     String filename = strongElement.text.trim();
-
-
     filename = filename.replaceFirst(RegExp(r'^\(\|.*?\|\)\s*'), '').trim();
-
     filename = filename.replaceFirst(RegExp(r'^\d+\s*-\s*'), '').trim();
-
 
     final linkElement = block.nextElementSibling
         ?.nextElementSibling
         ?.querySelector('a#download');
+
     final href = linkElement?.attributes['href']?.trim() ?? '';
+    if (href.isEmpty) continue;
+
+    if (_looksLikeVideo(filename, href)) continue;
 
 
-    if (filename.toLowerCase().endsWith('.mp4') ||
-        filename.toLowerCase().endsWith('.m4v')) {
-      continue;
-    }
-
-    if (filename.isNotEmpty && href.isNotEmpty) {
-      materials.add({
-        'title': filename,
-        'href': href,
-      });
-    }
+    materials.add({
+      'title': filename,
+      'href': href,
+    });
   }
 
   setState(() {
@@ -252,13 +263,34 @@ Future<void> _loadData() async {
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                         (context, idx) {
-                      final item =downloadableMaterials[idx];
+                      final item = downloadableMaterials[idx];
+                      final title = item['title']!;
+                      final href  = item['href']!;
+
+                      return FutureBuilder<String?>(
+                        future: _findExistingLocalPath(href),
+                        builder: (context, snap) {
+                          final existingPath = snap.data;
+                          final isDownloaded = existingPath != null;
+
+
                           return DownloadTile(
-                              title: item['title']!,
-                          href: item['href']!,
-                          onDownload: () async {
-                            await downloadFile(context,item['href']!, item['title']!);
-                          });
+                            title: title,
+                            href: href,
+                            isDownloaded: isDownloaded,
+
+                            onDownload: () async {
+                              if (isDownloaded) {
+
+                                await OpenFile.open(existingPath);
+                              } else {
+                                await downloadFile(context, href, title);
+                                setState(() {});
+                              }
+                            },
+                          );
+                        },
+                      );
                     },
                     childCount: downloadableMaterials.length,
                   ),

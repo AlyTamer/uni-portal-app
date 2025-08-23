@@ -3,6 +3,9 @@ import 'package:uni_portal_app/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../functions/mailbox/webview_util.dart';
+import 'dart:async';
+import '../functions/core/connectivity_service.dart';
+
 
 
 class LoginScreen extends StatefulWidget {
@@ -18,6 +21,8 @@ class _LoginScreenState extends State<LoginScreen> {
   late String password;
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _online = true;
+  StreamSubscription<bool>? _netSub;
   bool validateInput(){
     final inputUsername = _usernameController.text;
     final inputPassword = _passwordController.text;
@@ -48,24 +53,17 @@ class _LoginScreenState extends State<LoginScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('savedUsername', username);
       await prefs.setString('savedPassword', password);
-
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => HomeScreen(
-            username: username,
-            password: password,
-          ),
+          builder: (context) => HomeScreen(username: username, password: password),
         ),
       );
     } catch (e) {
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Login failed. Please check your credentials.'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Login failed. Please check your credentials.'), backgroundColor: Colors.red),
       );
     }
   }
@@ -73,26 +71,38 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
 
+    // ensure connectivity service running, seed value, and listen for changes
+    ConnectivityService.instance.init();
+    _online = ConnectivityService.instance.isOnline;
+    _netSub = ConnectivityService.instance.onlineStream.listen((online) {
+      if (!mounted) return;
+      setState(() => _online = online);
+    });
     SharedPreferences.getInstance().then((prefs) {
       final savedUsername = prefs.getString('savedUsername') ?? "NO_USERNAME";
       final savedPassword = prefs.getString('savedPassword') ?? "NO_PASSWORD";
-
-      if (savedUsername != "NO_USERNAME" && savedPassword != "NO_PASSWORD") {
+      if (_online && savedUsername != "NO_USERNAME" && savedPassword != "NO_PASSWORD") {
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(
-              username: savedUsername,
-              password: savedPassword,
-            ),
+            builder: (context) => HomeScreen(username: savedUsername, password: savedPassword),
           ),
         );
       }
     });
   }
+  @override
+  void dispose() {
+    _netSub?.cancel();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final canSubmit = _online;
     return Scaffold(body: Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -177,12 +187,12 @@ class _LoginScreenState extends State<LoginScreen> {
             style: ButtonStyle(
                backgroundColor: WidgetStatePropertyAll<Color>(Color.fromRGBO(213, 111, 172, 1.0)),
             ),
-              onPressed: () async {
+              onPressed:!canSubmit?null: () async {
                 if (validateInput()) {
                   await clearWebViewSession();
                   tryLoginAndFetchInbox();
                 }
-              }, child: Text("Login", style: TextStyle(fontSize: 20,
+              }, child: Text(_online?"Login":"No Internet Connection", style: TextStyle(fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Color.fromRGBO(
                     255, 255, 255, 1.0)

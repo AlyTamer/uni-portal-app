@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uni_portal_app/widgets/custom_drawer_widget.dart';
 import 'package:uni_portal_app/widgets/gradient_titles.dart';
+import 'package:uni_portal_app/widgets/offline_banner_widget.dart';
 
 import '../../functions/schedule/schedule_service.dart';
 
@@ -146,7 +147,7 @@ class _OtherSchedulesState extends State<OtherSchedules> {
                       onChanged: runFilter,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'Filter by text (e.g., CSEN, Aly, etc.)',
+                        hintText: 'Filter by text (e.g., xCSEN, Aly, etc.)',
                         hintStyle: const TextStyle(color: Colors.white54),
                         prefixIcon: const Icon(Icons.filter_alt, color: Colors.white70),
                         filled: true,
@@ -191,121 +192,123 @@ class _OtherSchedulesState extends State<OtherSchedules> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Scaffold(
-        drawer: CustomDrawerWidget(),
-        appBar: AppBar(
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          backgroundColor: const Color.fromRGBO(1, 1, 1, 1),
-          title: GradientTitle(text: 'Other Schedules', size: 30)
-        ),
-        body: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              SizedBox(
-                height: 44,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.search),
-                  label: Text(selectedItem ?? 'Select ${_showingCourses ? 'Course' : 'Staff'}'),
-                  onPressed: _openPicker,
-                ),
-              ),
-              Row(
-                children: [
-                  const Spacer(),
-                  ChoiceChip(
-                    label: const Text('Courses'),
-                    selected: _showingCourses,
-                    onSelected: (sel) {
-                      if (!sel) return;
-                      setState(() {
-                        _showingCourses = true;
-                        _visible = allCourses;
-                        selectedItem = null;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: const Text('Staff'),
-                    selected: !_showingCourses,
-                    onSelected: (sel) {
-                      if (!sel) return;
-                      setState(() {
-                        _showingCourses = false;
-                        _visible = allStaff;
-                        selectedItem = null;
-                      });
-                    },
-                  ),
-                  const Spacer(),
-                ],
-              ),
-
-
-              const SizedBox(height: 20),
-
-              SizedBox(
-                height: 55,
-                child: ListView.builder(
-                  itemCount: dayTabs.length,
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (context, idx) {
-                    return Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: DayTile(
-                        color: selIndex == idx
-                            ? Colors.deepPurple
-                            : const Color.fromRGBO(45, 45, 45, 1),
-                        day: dayTabs[idx],
-                        onTap: () => setState(() => selIndex = idx),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              if (_schedLoading) ...[
-                const Center(child: CircularProgressIndicator()),
-              ] else if (_schedError != null) ...[
-                Center(
-                  child: Text(
-                    'Failed to load schedule',
-                    style: Theme.of(context).textTheme.titleMedium,
+      child: OfflineBanner(
+        child: Scaffold(
+          drawer: CustomDrawerWidget(),
+          appBar: AppBar(
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            backgroundColor: const Color.fromRGBO(1, 1, 1, 1),
+            title: GradientTitle(text: 'Other Schedules', size: 30)
+          ),
+          body: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.search),
+                    label: Text(selectedItem ?? 'Select ${_showingCourses ? 'Course' : 'Staff'}'),
+                    onPressed: _openPicker,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text('$_schedError', style: Theme.of(context).textTheme.bodySmall),
-              ] else ...[
-                for (int i = 0; i < 5; i++) ...[
-                  Builder(
-                    builder: (context) {
-                      final fullKey = _abbrToFull[dayTabs[selIndex]]!;
-                      final daySlots = _data[fullKey] ?? const <ScheduleSlot>[];
-                      final s = (i < daySlots.length) ? daySlots[i] : ScheduleSlot.free(i + 1);
+                Row(
+                  children: [
+                    const Spacer(),
+                    ChoiceChip(
+                      label: const Text('Courses'),
+                      selected: _showingCourses,
+                      onSelected: (sel) {
+                        if (!sel) return;
+                        setState(() {
+                          _showingCourses = true;
+                          _visible = allCourses;
+                          selectedItem = null;
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('Staff'),
+                      selected: !_showingCourses,
+                      onSelected: (sel) {
+                        if (!sel) return;
+                        setState(() {
+                          _showingCourses = false;
+                          _visible = allStaff;
+                          selectedItem = null;
+                        });
+                      },
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+        
+        
+                const SizedBox(height: 20),
+        
+                SizedBox(
+                  height: 55,
+                  child: ListView.builder(
+                    itemCount: dayTabs.length,
+                    scrollDirection: Axis.horizontal,
+                    itemBuilder: (context, idx) {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        child: SchedTile(
-                          title: s.title,
-                          slotNum: s.slot,
-                          course: s.course,
-                          room: s.room,
-                          timeStart: s.start,
-                          timeEnd: s.end,
-                          items: s.details,
+                        padding: const EdgeInsets.all(8.0),
+                        child: DayTile(
+                          color: selIndex == idx
+                              ? Colors.deepPurple
+                              : const Color.fromRGBO(45, 45, 45, 1),
+                          day: dayTabs[idx],
+                          onTap: () => setState(() => selIndex = idx),
                         ),
                       );
                     },
                   ),
-                ],
-                const Spacer(flex: 1),
-              ]
-
-
-            ],
+                ),
+        
+                if (_schedLoading) ...[
+                  const Center(child: CircularProgressIndicator()),
+                ] else if (_schedError != null) ...[
+                  Center(
+                    child: Text(
+                      'Failed to load schedule',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('$_schedError', style: Theme.of(context).textTheme.bodySmall),
+                ] else ...[
+                  for (int i = 0; i < 5; i++) ...[
+                    Builder(
+                      builder: (context) {
+                        final fullKey = _abbrToFull[dayTabs[selIndex]]!;
+                        final daySlots = _data[fullKey] ?? const <ScheduleSlot>[];
+                        final s = (i < daySlots.length) ? daySlots[i] : ScheduleSlot.free(i + 1);
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          child: SchedTile(
+                            title: s.title,
+                            slotNum: s.slot,
+                            course: s.course,
+                            room: s.room,
+                            timeStart: s.start,
+                            timeEnd: s.end,
+                            items: s.details,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                  const Spacer(flex: 1),
+                ]
+        
+        
+              ],
+            ),
           ),
         ),
       ),

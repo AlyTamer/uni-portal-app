@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uni_portal_app/screens/cms/view_all_courses.dart';
 
 import '../screens/about_me_screen.dart';
 import '../screens/login_screen.dart';
@@ -46,7 +47,9 @@ class CustomDrawerWidget extends StatelessWidget {
               leading: const Icon(Icons.search, color: Colors.purpleAccent),
               title: const Text('Previous CMS'),
               onTap: () {
-                //TODO implement view previous courses CMS Navigation
+                Navigator.push(context, MaterialPageRoute (
+                    builder:(_)=> ViewAllScreen()
+                ));
               }
           ),
           SizedBox(height: MediaQuery.of(context).size.height * 0.025),
