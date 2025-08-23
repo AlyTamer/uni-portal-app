@@ -112,7 +112,7 @@ class CmsHome extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16.0),
 
-                    color: const Color.fromRGBO(90, 90, 90, 1.0), // base dark tone
+                    color: const Color.fromRGBO(90, 90, 90, 1.0),
                   ),
 
                   height: 500,
