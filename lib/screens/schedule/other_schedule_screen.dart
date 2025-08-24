@@ -198,7 +198,6 @@ class _OtherSchedulesState extends State<OtherSchedules> {
     }
   }
 
-  static const List<String> days = ['Sat','Sun','Mon','Tue','Wed','Thu'];
   void _openPicker() async {
     final picked = await showModalBottomSheet<String>(
       context: context,
