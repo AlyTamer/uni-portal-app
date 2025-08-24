@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:uni_portal_app/widgets/day_tile_widget.dart';
 import 'package:uni_portal_app/widgets/gradient_titles.dart';
@@ -14,6 +16,8 @@ class ScheduleScreen extends StatefulWidget {
 class _ScheduleScreenState extends State<ScheduleScreen> {
   static const List<String> days = ['Sat','Sun','Mon','Tue','Wed','Thu'];
   int selIndex = 0;
+  final _svc = ScheduleService();
+  StreamSubscription<void>? _sub;
 
   Map<String, List<ScheduleSlot>> _data = {
     for (final d in days) d: List.generate(5, (i) => ScheduleSlot.free(i + 1)),
@@ -24,17 +28,27 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
-  }
+    _bootstrapSWR();
 
-  Future<void> _load() async {
+    _sub = _svc.groupScheduleRefreshed.listen((_) async {
+      final map = await _svc.getCachedGroupSchedule();
+      if (!mounted) return;
+      setState(() => _data = map);
+    });
+  }
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+  Future<void> _bootstrapSWR() async {
     try {
-      final svc = ScheduleService();
-      final map = await svc.fetchSchedule();
+      final map = await _svc.fetchScheduleSWR(); // cache now; refresh in bg
       if (!mounted) return;
       setState(() {
         _data = map;
         _loading = false;
+        _error = null;
       });
     } catch (e) {
       if (!mounted) return;
@@ -108,8 +122,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       slotNum: s.slot,
                       course: s.course,
                       room: s.room,
-                      timeStart: s.start,
-                      timeEnd: s.end,
                     );
                   },
                 ),

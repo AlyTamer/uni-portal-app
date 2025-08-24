@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_portal_app/screens/cms/view_all_courses.dart';
+import 'package:uni_portal_app/screens/home_screen.dart';
 
 import '../screens/about_me_screen.dart';
 import '../screens/login_screen.dart';
@@ -34,6 +35,23 @@ class CustomDrawerWidget extends StatelessWidget {
             ),
           ),
           ListTile(
+              leading: const Icon(Icons.home, color: Colors.purpleAccent),
+              title: const Text('Home'),
+              onTap: () async {
+
+                SharedPreferences prefs =
+                    await SharedPreferences.getInstance();
+                final username = prefs.getString('savedUsername')?.toLowerCase() ?? '';
+                final password = prefs.getString('savedPassword') ?? '';
+                Navigator.pushReplacement(context, MaterialPageRoute (
+                    builder:(_)=> HomeScreen(username: username,
+                      password: password,)
+                ));
+
+              }
+          ),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.025),
+          ListTile(
             leading: const Icon(Icons.manage_search, color: Colors.deepPurpleAccent),
             title: const Text('Other Schedules'),
             onTap: () {
@@ -50,20 +68,6 @@ class CustomDrawerWidget extends StatelessWidget {
                 Navigator.push(context, MaterialPageRoute (
                     builder:(_)=> ViewAllScreen()
                 ));
-              }
-          ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.025),
-          ListTile(
-              leading: const Icon(Icons.gamepad, color: Colors.blueAccent),
-              title: const Text('Arcade'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Arcade feature Coming Soon!\nNo Promises ;)'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
               }
           ),
           SizedBox(height: MediaQuery.of(context).size.height * 0.025),

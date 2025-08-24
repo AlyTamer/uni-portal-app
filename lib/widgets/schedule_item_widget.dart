@@ -6,8 +6,7 @@ class SchedTile extends StatelessWidget {
   final int slotNum;
   final String course;
   final String room;
-  final String timeStart;
-  final String timeEnd;
+
 
   final List<svc.SlotDetail>? items;
 
@@ -17,8 +16,7 @@ class SchedTile extends StatelessWidget {
     required this.slotNum,
     required this.course,
     required this.room,
-    required this.timeStart,
-    required this.timeEnd,
+
     this.items,
   });
   String get _primaryTypeLetter {
@@ -46,7 +44,7 @@ class SchedTile extends StatelessWidget {
       return title.replaceAll("(Practical)", "").trim();
     }
     else 
-      return title;
+      {return title;}
   }
   @override
   Widget build(BuildContext context) {
@@ -107,16 +105,6 @@ class SchedTile extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.visible,
                 style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-
-            Positioned(
-              top: 10, right: 15,
-              child: Text(
-                '${timeStart.isEmpty ? '' : timeStart}'
-                    '${(timeStart.isNotEmpty || timeEnd.isNotEmpty) ? ' - ' : ''}'
-                    '${timeEnd.isEmpty ? '' : timeEnd}',
-                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
 

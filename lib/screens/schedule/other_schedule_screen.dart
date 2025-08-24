@@ -7,8 +7,9 @@ import '../../functions/schedule/schedule_service.dart';
 
 import '../../widgets/day_tile_widget.dart';
 import '../../widgets/schedule_item_widget.dart';
-import '../about_me_screen.dart';
-import '../login_screen.dart';
+import 'dart:async';
+import 'dart:convert';
+
 class OtherSchedules extends StatefulWidget {
   const OtherSchedules({super.key});
 
@@ -48,33 +49,58 @@ class _OtherSchedulesState extends State<OtherSchedules> {
   @override
   void initState() {
     super.initState();
-    _loadSearchLists();
-  }
+    _loadSearchListsSWR(); // ⬅️ use SWR for the pickers
 
-  Future<void> _fetchForSelection(String id) async {
-    setState(() {
-      _schedLoading = true;
-      _schedError = null;
+    // ⬇️ repaint lists when background refresh finishes
+    _listsSub = _svc.searchListsRefreshed.listen((_) async {
+      final lists = await _svc.getCachedSearchLists();
+      if (!mounted) return;
+      setState(() {
+        _coursesItems = lists.courses;
+        _staffItems   = lists.staff;
+        allCourses    = _coursesItems.map((e) => e.value).toList();
+        allStaff      = _staffItems.map((e) => e.value).toList();
+        _visible      = _showingCourses ? allCourses : allStaff;
+      });
     });
-    try {
-      final map = await _svc.fetchAcademicSchedule(
-        courseIds: _showingCourses ? [id] : const [],
-        staffIds:  _showingCourses ? const [] : [id],
-      );
-      if (!mounted) return;
-      setState(() => _data = map);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _schedError = e.toString());
-    } finally {
-      if (mounted) setState(() => _schedLoading = false);
-    }
+
+    // ⬇️ repaint schedule when the selected query finishes refreshing
+    _acadSub = _svc.academicRefreshed.listen((key) async {
+      if (key == _currentKey) {
+        final map = await _svc.getCachedAcademicSchedule(
+          courseIds: _showingCourses && (selectedItem != null)
+              ? [_coursesItems.firstWhere(
+                (i) => i.value == selectedItem!,
+            orElse: () => const SearchItem(id: '', value: ''),
+          ).id].where((e) => e.isNotEmpty).toList()
+              : const [],
+          staffIds: !_showingCourses && (selectedItem != null)
+              ? [_staffItems.firstWhere(
+                (i) => i.value == selectedItem!,
+            orElse: () => const SearchItem(id: '', value: ''),
+          ).id].where((e) => e.isNotEmpty).toList()
+              : const [],
+        );
+        if (!mounted) return;
+        setState(() {
+          _data = map;
+          _refreshing = false;
+        });
+      }
+    });
   }
 
-  Future<void> _loadSearchLists() async {
+  @override
+  void dispose() {
+    _listsSub?.cancel();
+    _acadSub?.cancel();
+    super.dispose();
+  }
+  // REPLACE your _loadSearchLists() body with:
+  Future<void> _loadSearchListsSWR() async {
     setState(() => isLoading = true);
     try {
-      final lists = await _svc.fetchSearchLists();
+      final lists = await _svc.fetchSearchListsSWR(); // ⬅️ returns cache now, refreshes in bg
       _coursesItems = lists.courses;
       _staffItems   = lists.staff;
 
@@ -88,6 +114,66 @@ class _OtherSchedulesState extends State<OtherSchedules> {
       if (mounted) setState(() => isLoading = false);
     }
   }
+
+  StreamSubscription<void>? _listsSub;
+  StreamSubscription<String>? _acadSub;
+  String? _currentKey;
+  bool _refreshing = false;
+
+  String _buildQueryKey(List<String> courseIds, List<String> staffIds) {
+    final raw = 'courses=${courseIds.join(",")}__staff=${staffIds.join(",")}';
+    return base64Url.encode(utf8.encode(raw));
+  }
+
+  Future<void> _fetchForSelection(String id) async {
+    setState(() {
+      _schedLoading = false; // we want to show cached result immediately
+      _schedError = null;
+      _refreshing = true;    // tiny spinner during bg refresh
+    });
+
+    // Build ids
+    final courseIds = _showingCourses ? [id] : const <String>[];
+    final staffIds  = _showingCourses ? const <String>[] : [id];
+
+    // Track the current query key (prefer service builder if available)
+    try {
+      if (_svc.buildAcademicQueryKey != null) {
+        // ignore: unnecessary_null_comparison
+        // some IDEs warn; this is just to illustrate preferring service method
+      }
+    } catch (_) {}
+    try {
+      // If your service exposes a builder:
+      // _currentKey = _svc.buildAcademicQueryKey(courseIds, staffIds);
+      // Otherwise fallback to the local one:
+      _currentKey = _buildQueryKey(courseIds, staffIds);
+    } catch (_) {
+      _currentKey = null; // still fine; we'll just not filter by key
+    }
+
+    try {
+      // SWR: returns cached schedule immediately (if any), triggers bg refresh
+      final map = await _svc.fetchAcademicScheduleSWR(
+        courseIds: courseIds,
+        staffIds:  staffIds,
+      );
+      if (!mounted) return;
+      setState(() {
+        _data = map;
+        _schedLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _schedError = e.toString();
+        _schedLoading = false;
+        _refreshing = false;
+      });
+    }
+  }
+
+  // REPLACE your _loadSearchLists() body with:
 
   void applyFilter(String query) {
     final items = _showingCourses ? _coursesItems : _staffItems;
@@ -295,8 +381,6 @@ class _OtherSchedulesState extends State<OtherSchedules> {
                             slotNum: s.slot,
                             course: s.course,
                             room: s.room,
-                            timeStart: s.start,
-                            timeEnd: s.end,
                             items: s.details,
                           ),
                         );

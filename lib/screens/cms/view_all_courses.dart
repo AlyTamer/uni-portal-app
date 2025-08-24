@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:uni_portal_app/functions/cms/cms_web_service.dart';
 import 'package:uni_portal_app/widgets/offline_banner_widget.dart';
@@ -12,37 +14,70 @@ class ViewAllScreen extends StatefulWidget {
 }
 
 class _ViewAllScreenState extends State<ViewAllScreen> {
+  final _cms = CmsService();
+  StreamSubscription<void>? _coursesSub;
   List<Map<String, dynamic>> allCourses = [];
   String? selectedSeason;
   List<Map<String, String>> selectedCourses = [];
   List<String> allSeasons = [];
-
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadSeasons();
+
+    // 1) Paint immediately from cache if present (and start background refresh).
+    _loadSeasonsSWR();
+
+    // 2) Repaint when fresh HTML lands.
+
+    _coursesSub = _cms.coursesRefreshed.listen((_) async {
+      final latest = await _cms.getCachedCourses();
+      if (!mounted) return;
+      setState(() {
+        allCourses = latest;
+        allSeasons = allCourses.map((c) => c['season'] as String).toSet().toList();
+
+        if (selectedSeason != null) {
+          // Rebuild the course list for the currently selected season (if it still exists)
+          if (allSeasons.contains(selectedSeason)) {
+            selectedCourses = allCourses
+                .where((c) => c['season'] == selectedSeason)
+                .map<Map<String, String>>((c) => {
+              'name': c['name'] as String,
+              'url': c['url'] as String,
+            })
+                .toList();
+          } else {
+            selectedSeason = null;
+            selectedCourses = [];
+          }
+        }
+      });
+    });
+  }
+  @override
+  void dispose() {
+    _coursesSub?.cancel();
+    super.dispose();
   }
 
-  Future<void> _loadSeasons() async {
+  Future<void> _loadSeasonsSWR() async {
+    setState(() => isLoading = true);
     try {
-      final cmsService = CmsService();
-      final data = await cmsService.fetchCourses();
-
+      final data = await _cms.fetchCoursesSWR(); // cache now, refresh in bg
+      if (!mounted) return;
       setState(() {
         allCourses = data;
         allSeasons = allCourses.map((c) => c['season'] as String).toSet().toList();
         isLoading = false;
       });
-
     } catch (e) {
-
-      setState(() {
-        isLoading = false;
-      });
+      if (!mounted) return;
+      setState(() => isLoading = false);
     }
   }
+
 
   void _onSeasonSelected(String season) {
     setState(() {

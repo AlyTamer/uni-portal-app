@@ -6,12 +6,10 @@ import 'package:uni_portal_app/screens/schedule/schedule_screen.dart';
 import 'package:uni_portal_app/widgets/custom_drawer_widget.dart';
 import 'package:uni_portal_app/widgets/offline_banner_widget.dart';
 
-import '../functions/cms/cms_web_service.dart';
 import '../functions/mailbox/webview_util.dart';
 import '../widgets/app_icon_widget.dart';
 import 'mailbox_screen.dart';
-import 'dart:async';
-import '../functions/core/connectivity_service.dart';
+
 
 class HomeScreen extends StatefulWidget {
   final String username;
@@ -24,22 +22,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  StreamSubscription<bool>? _sub;
-  @override
-  void initState() {
-    CmsService().fetchCourses().catchError((_)  {});
-    _sub = ConnectivityService.instance.onlineStream.listen((online) {
-      if (online) {
-        CmsService().refreshCoursesIfStale();
-      }
-    });
-    super.initState();
-  }
-  @override
-  void dispose() {
-    _sub?.cancel();
-    super.dispose();
-  }
+
   @override
   Widget build(BuildContext context) {
     String fName = widget.username.split('.').first;

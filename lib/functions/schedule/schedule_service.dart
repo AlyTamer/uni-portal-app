@@ -1,11 +1,12 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ntlm/ntlm.dart';
-import 'package:html/parser.dart' as parser;
-import 'package:html/dom.dart' as dom;
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' as parser;
+import 'package:ntlm/ntlm.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SlotDetail {
   final String course;
@@ -21,14 +22,11 @@ class SlotDetail {
   });
 }
 
-
 class ScheduleSlot {
   final int slot;
   final String title;
   final String course;
   final String room;
-  final String start;
-  final String end;
   final bool isFree;
   final List<SlotDetail> details; // NEW
 
@@ -37,8 +35,6 @@ class ScheduleSlot {
     required this.title,
     required this.course,
     required this.room,
-    required this.start,
-    required this.end,
     required this.isFree,
     this.details = const [], // NEW
   });
@@ -48,8 +44,6 @@ class ScheduleSlot {
     title: 'Free',
     course: '',
     room: '',
-    start: '',
-    end: '',
     isFree: true,
     details: const [], // NEW
   );
@@ -70,40 +64,9 @@ class SearchLists {
   const SearchLists({required this.courses, required this.staff});
 }
 
-
 class ScheduleService {
-
-
-  Future<Map<String, List<ScheduleSlot>>> fetchSchedule() async {
-    final prefs = await SharedPreferences.getInstance();
-    const cacheKey = 'cache_schedule_group_html';
-    const cacheTimeKey = 'cache_schedule_group_time';
-
-    try {
-      final html = await _fetchGroupScheduleHtml(); // your existing network method
-      // save cache
-      await prefs.setString(cacheKey, html);
-      await prefs.setInt(cacheTimeKey, DateTime.now().millisecondsSinceEpoch);
-
-      return _parseGroupSchedule(html);
-    } catch (e) {
-      // try fresh cache (< 6h)
-      final cached = prefs.getString(cacheKey);
-      final ts = prefs.getInt(cacheTimeKey) ?? 0;
-      final ageMs = DateTime.now().millisecondsSinceEpoch - ts;
-
-      if (cached != null && ageMs < const Duration(hours: 6).inMilliseconds) {
-        return _parseGroupSchedule(cached);
-      }
-      // stale fallback (older than 6h) – still show something if available
-      if (cached != null) {
-        return _parseGroupSchedule(cached);
-      }
-
-      rethrow; // nothing cached at all
-    }
-  }
-
+  final _groupRefreshedCtr = StreamController<void>.broadcast();
+  Stream<void> get groupScheduleRefreshed => _groupRefreshedCtr.stream;
 
   Future<SearchLists> fetchSearchLists() async {
     final prefs = await SharedPreferences.getInstance();
@@ -113,21 +76,26 @@ class ScheduleService {
     // same headers you already used
     const headers = {
       'User-Agent':
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
           '(KHTML, like Gecko) Chrome/124.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept':
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9',
       'Connection': 'keep-alive',
     };
 
     try {
       final ntlm = await _createClient();
-      final uri = Uri.parse('https://apps.guc.edu.eg/student_ext/Scheduling/SearchAcademicScheduled_001.aspx');
+      final uri = Uri.parse(
+        'https://apps.guc.edu.eg/student_ext/Scheduling/SearchAcademicScheduled_001.aspx',
+      );
       final resp = await ntlm.get(uri, headers: headers);
       final html = resp.body;
 
       if (resp.statusCode != 200 || !_pageHasArrays(html)) {
-        throw StateError('Could not locate courses/tas arrays in response HTML');
+        throw StateError(
+          'Could not locate courses/tas arrays in response HTML',
+        );
       }
 
       // cache
@@ -136,13 +104,16 @@ class ScheduleService {
 
       // parse
       final coursesRaw = _extractJsArray(html: html, variableName: 'courses')!;
-      final tasRaw     = _extractJsArray(html: html, variableName: 'tas')!;
-      final courses    = _parseJsObjectsArray(coursesRaw);
-      final staff      = _parseJsObjectsArray(tasRaw);
+      final tasRaw = _extractJsArray(html: html, variableName: 'tas')!;
+      final courses = _parseJsObjectsArray(coursesRaw);
+      final staff = _parseJsObjectsArray(tasRaw);
 
       final coursesTagged = courses.map((c) {
         final ty = _inferTypeForName(c.value);
-        return SearchItem(id: c.id, value: ty.isNotEmpty ? '${c.value} ($ty)' : c.value);
+        return SearchItem(
+          id: c.id,
+          value: ty.isNotEmpty ? '${c.value} ($ty)' : c.value,
+        );
       }).toList();
 
       return SearchLists(courses: coursesTagged, staff: staff);
@@ -152,26 +123,38 @@ class ScheduleService {
       final ageMs = DateTime.now().millisecondsSinceEpoch - ts;
 
       if (cached != null && ageMs < const Duration(hours: 6).inMilliseconds) {
-        final coursesRaw = _extractJsArray(html: cached, variableName: 'courses')!;
-        final tasRaw     = _extractJsArray(html: cached, variableName: 'tas')!;
-        final courses    = _parseJsObjectsArray(coursesRaw);
-        final staff      = _parseJsObjectsArray(tasRaw);
+        final coursesRaw = _extractJsArray(
+          html: cached,
+          variableName: 'courses',
+        )!;
+        final tasRaw = _extractJsArray(html: cached, variableName: 'tas')!;
+        final courses = _parseJsObjectsArray(coursesRaw);
+        final staff = _parseJsObjectsArray(tasRaw);
         final coursesTagged = courses.map((c) {
           final ty = _inferTypeForName(c.value);
-          return SearchItem(id: c.id, value: ty.isNotEmpty ? '${c.value} ($ty)' : c.value);
+          return SearchItem(
+            id: c.id,
+            value: ty.isNotEmpty ? '${c.value} ($ty)' : c.value,
+          );
         }).toList();
         return SearchLists(courses: coursesTagged, staff: staff);
       }
 
       // stale fallback
       if (cached != null) {
-        final coursesRaw = _extractJsArray(html: cached, variableName: 'courses')!;
-        final tasRaw     = _extractJsArray(html: cached, variableName: 'tas')!;
-        final courses    = _parseJsObjectsArray(coursesRaw);
-        final staff      = _parseJsObjectsArray(tasRaw);
+        final coursesRaw = _extractJsArray(
+          html: cached,
+          variableName: 'courses',
+        )!;
+        final tasRaw = _extractJsArray(html: cached, variableName: 'tas')!;
+        final courses = _parseJsObjectsArray(coursesRaw);
+        final staff = _parseJsObjectsArray(tasRaw);
         final coursesTagged = courses.map((c) {
           final ty = _inferTypeForName(c.value);
-          return SearchItem(id: c.id, value: ty.isNotEmpty ? '${c.value} ($ty)' : c.value);
+          return SearchItem(
+            id: c.id,
+            value: ty.isNotEmpty ? '${c.value} ($ty)' : c.value,
+          );
         }).toList();
         return SearchLists(courses: coursesTagged, staff: staff);
       }
@@ -180,15 +163,190 @@ class ScheduleService {
     }
   }
 
+  Future<Map<String, List<ScheduleSlot>>> getCachedGroupSchedule() async {
+    final prefs = await SharedPreferences.getInstance();
+    const cacheKey = 'cache_schedule_group_html';
+    final cached = prefs.getString(cacheKey);
+    if (cached == null) {
+      return {
+        for (final d in _days)
+          d: List.generate(5, (i) => ScheduleSlot.free(i + 1)),
+      };
+    }
+    return _parseGroupSchedule(cached);
+  }
 
-  String? _extractJsArray({required String html, required String variableName}) {
+  // SWR: return cache immediately if present, then refresh in background
+  Future<Map<String, List<ScheduleSlot>>> fetchScheduleSWR() async {
+    final prefs = await SharedPreferences.getInstance();
+    const cacheKey = 'cache_schedule_group_html';
+    final cached = prefs.getString(cacheKey);
+
+    if (cached != null) {
+      // Kick a background refresh and notify listeners on success
+      Future.microtask(() => _refreshGroupScheduleInBackground(notify: true));
+      return _parseGroupSchedule(cached);
+    }
+
+    // No cache yet → fetch online, cache, notify, return
+    final html = await _fetchGroupScheduleHtml();
+    await prefs.setString(cacheKey, html);
+    await prefs.setInt(
+      'cache_schedule_group_time',
+      DateTime.now().millisecondsSinceEpoch,
+    );
+    _groupRefreshedCtr.add(null);
+    return _parseGroupSchedule(html);
+  }
+
+  Future<void> _refreshGroupScheduleInBackground({bool notify = false}) async {
+    try {
+      final html = await _fetchGroupScheduleHtml();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cache_schedule_group_html', html);
+      await prefs.setInt(
+        'cache_schedule_group_time',
+        DateTime.now().millisecondsSinceEpoch,
+      );
+      if (notify) _groupRefreshedCtr.add(null);
+    } catch (_) {
+      // silently ignore; we keep showing the cached UI
+    }
+  }
+
+  // --- SWR: search lists ---
+  final _searchListsRefreshedCtr = StreamController<void>.broadcast();
+  Stream<void> get searchListsRefreshed => _searchListsRefreshedCtr.stream;
+
+  Future<SearchLists> getCachedSearchLists() async {
+    final prefs = await SharedPreferences.getInstance();
+    const cacheKey = 'cache_sched_search_html';
+    final cached = prefs.getString(cacheKey);
+    if (cached == null) return const SearchLists(courses: [], staff: []);
+
+    final coursesRaw = _extractJsArray(html: cached, variableName: 'courses')!;
+    final tasRaw = _extractJsArray(html: cached, variableName: 'tas')!;
+    final courses = _parseJsObjectsArray(coursesRaw);
+    final staff = _parseJsObjectsArray(tasRaw);
+
+    final coursesTagged = courses.map((c) {
+      final ty = _inferTypeForName(c.value);
+      return SearchItem(
+        id: c.id,
+        value: ty.isNotEmpty ? '${c.value} ($ty)' : c.value,
+      );
+    }).toList();
+
+    return SearchLists(courses: coursesTagged, staff: staff);
+  }
+
+  Future<SearchLists> fetchSearchListsSWR() async {
+    final prefs = await SharedPreferences.getInstance();
+    const cacheKey = 'cache_sched_search_html';
+    final cached = prefs.getString(cacheKey);
+
+    if (cached != null) {
+      // return cache NOW
+      final lists = await getCachedSearchLists();
+      // refresh in background & notify
+      Future.microtask(() async {
+        try {
+          await fetchSearchLists(); // updates cache
+          _searchListsRefreshedCtr.add(null);
+        } catch (_) {}
+      });
+      return lists;
+    } else {
+      // no cache yet → fetch online, then notify
+      final fresh = await fetchSearchLists(); // reuses your existing method
+      _searchListsRefreshedCtr.add(null);
+      return fresh;
+    }
+  }
+
+  // --- SWR: academic schedule ---
+  final _academicRefreshedCtr = StreamController<String>.broadcast();
+  Stream<String> get academicRefreshed => _academicRefreshedCtr.stream;
+
+  // Full day names used by the academic table UI
+  static const _days6 = [
+    'Saturday',
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+  ];
+
+  String buildAcademicQueryKey(List<String> courseIds, List<String> staffIds) {
+    final queryKeyRaw =
+        'courses=${courseIds.join(",")}__staff=${staffIds.join(",")}';
+    return base64Url.encode(utf8.encode(queryKeyRaw));
+  }
+
+  Map<String, List<ScheduleSlot>> _emptyAcademic() => {
+    for (final d in _days6)
+      d: List.generate(5, (i) => ScheduleSlot.free(i + 1)),
+  };
+
+  Future<Map<String, List<ScheduleSlot>>> getCachedAcademicSchedule({
+    List<String> courseIds = const [],
+    List<String> staffIds = const [],
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = buildAcademicQueryKey(courseIds, staffIds);
+    final cacheKey = 'cache_acad_html_$key';
+    final cached = prefs.getString(cacheKey);
+    if (cached == null) return _emptyAcademic();
+    return _parseAcademicSchedule(cached);
+  }
+
+  Future<Map<String, List<ScheduleSlot>>> fetchAcademicScheduleSWR({
+    List<String> courseIds = const [],
+    List<String> staffIds = const [],
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = buildAcademicQueryKey(courseIds, staffIds);
+    final cacheKey = 'cache_acad_html_$key';
+
+    final cached = prefs.getString(cacheKey);
+    if (cached != null) {
+      // 1) return cache NOW
+      final parsed = _parseAcademicSchedule(cached);
+
+      // 2) refresh in background
+      Future.microtask(() async {
+        try {
+          await fetchAcademicSchedule(courseIds: courseIds, staffIds: staffIds);
+          _academicRefreshedCtr.add(key);
+        } catch (_) {}
+      });
+
+      return parsed;
+    } else {
+      // no cache yet → do the full fetch (your existing method)
+      final fresh = await fetchAcademicSchedule(
+        courseIds: courseIds,
+        staffIds: staffIds,
+      );
+      _academicRefreshedCtr.add(key);
+      return fresh;
+    }
+  }
+
+  String? _extractJsArray({
+    required String html,
+    required String variableName,
+  }) {
     final pair = RegExp(
       r'\bcourses\s*=\s*(\[[\s\S]*?\])\s*,\s*tas\s*=\s*(\[[\s\S]*?\])',
       multiLine: true,
       caseSensitive: false,
     ).firstMatch(html);
     if (pair != null) {
-      return variableName.toLowerCase() == 'courses' ? pair.group(1) : pair.group(2);
+      return variableName.toLowerCase() == 'courses'
+          ? pair.group(1)
+          : pair.group(2);
     }
 
     final single = RegExp(
@@ -208,11 +366,9 @@ class ScheduleService {
     return loose?.group(1);
   }
 
-
   List<SearchItem> filterItems(List<SearchItem> items, String query) {
     final q = query.trim();
     if (q.isEmpty) return items;
-
 
     try {
       final re = RegExp(q, caseSensitive: false);
@@ -227,11 +383,11 @@ class ScheduleService {
     debugPrint('$label: ${item.value}');
   }
 
-
   Future<String> _fetchGroupScheduleHtml() async {
     final client = await _createClient();
     final uri = Uri.parse(
-        'https://apps.guc.edu.eg/student_ext/Scheduling/GroupSchedule.aspx');
+      'https://apps.guc.edu.eg/student_ext/Scheduling/GroupSchedule.aspx',
+    );
     final res = await client.get(uri);
     if (res.statusCode != 200) {
       throw Exception('Failed to fetch schedule page (${res.statusCode})');
@@ -246,28 +402,26 @@ class ScheduleService {
     if (username.isEmpty || password.isEmpty) {
       throw StateError('Missing saved NTLM credentials');
     }
-    return NTLMClient(domain: 'guc.edu.eg', username: username, password: password);
+    return NTLMClient(
+      domain: 'guc.edu.eg',
+      username: username,
+      password: password,
+    );
   }
 
-
   static const _days = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
-  static const _slotTimes = <List<String>>[
-    ['8:15 AM', '9:45 AM'],
-    ['10:00 AM', '11:30 AM'],
-    ['11:45 AM', '1:15 PM'],
-    ['1:45 PM', '3:15 PM'],
-    ['3:45 PM', '5:15 PM'],
-  ];
+
 
   Map<String, List<ScheduleSlot>> _parseGroupSchedule(String html) {
     final doc = parser.parse(html);
 
     final table = doc.querySelector(
-        '#ContentPlaceHolderright_ContentPlaceHoldercontent_scdTbl');
+      '#ContentPlaceHolderright_ContentPlaceHoldercontent_scdTbl',
+    );
     if (table == null) {
       return {
-        for (final d in _days) d: List.generate(
-            5, (i) => ScheduleSlot.free(i + 1))
+        for (final d in _days)
+          d: List.generate(5, (i) => ScheduleSlot.free(i + 1)),
       };
     }
     final out = <String, List<ScheduleSlot>>{};
@@ -277,7 +431,8 @@ class ScheduleService {
       final dayKey = _days[d];
 
       final altRow = doc.querySelector(
-          '#ContentPlaceHolderright_ContentPlaceHoldercontent_XaltR$dayIdx');
+        '#ContentPlaceHolderright_ContentPlaceHoldercontent_XaltR$dayIdx',
+      );
       final allFree = altRow?.text.toLowerCase().contains('free') == true;
 
       final slots = <ScheduleSlot>[];
@@ -291,13 +446,15 @@ class ScheduleService {
         }
 
         final span = doc.querySelector(
-            '#ContentPlaceHolderright_ContentPlaceHoldercontent_XlblR${dayIdx}C$slot');
+          '#ContentPlaceHolderright_ContentPlaceHoldercontent_XlblR${dayIdx}C$slot',
+        );
         String text = _clean(span?.text ?? '');
-        print(text);
+        debugPrint(text);
 
         if (text.isEmpty) {
           final dayRow = doc.querySelector(
-              '#ContentPlaceHolderright_ContentPlaceHoldercontent_Xrw$dayIdx');
+            '#ContentPlaceHolderright_ContentPlaceHoldercontent_Xrw$dayIdx',
+          );
           dom.Element? cell;
           if (dayRow != null) {
             final tds = dayRow.querySelectorAll('td');
@@ -307,23 +464,21 @@ class ScheduleService {
           }
           text = _clean(cell?.text ?? '');
         }
-        print("$text\nsecond time");
+        debugPrint("$text\nsecond time");
 
         if (text.isEmpty || text.toLowerCase() == 'free') {
           slots.add(ScheduleSlot.free(slot));
         } else {
           final room = _extractRoom(text);
-          final start = _slotTimes[s][0];
-          final end = _slotTimes[s][1];
-          slots.add(ScheduleSlot(
-            slot: slot,
-            title: text,
-            course: text,
-            room: room,
-            start: start,
-            end: end,
-            isFree: false,
-          ));
+          slots.add(
+            ScheduleSlot(
+              slot: slot,
+              title: text,
+              course: text,
+              room: room,
+              isFree: false,
+            ),
+          );
         }
       }
 
@@ -341,7 +496,6 @@ class ScheduleService {
     return m?.group(0) ?? '';
   }
 
-
   List<SearchItem> _parseJsObjectsArray(String arrayContent) {
     final src = arrayContent.replaceAll('\u00A0', ' ').trim();
 
@@ -351,11 +505,12 @@ class ScheduleService {
         final List<dynamic> arr = jsonDecode(src);
         return arr
             .whereType<Map<String, dynamic>>()
-            .map((m) =>
-            SearchItem(
-              id: (m['id'] ?? '').toString().trim(),
-              value: (m['value'] ?? '').toString().trim(),
-            ))
+            .map(
+              (m) => SearchItem(
+                id: (m['id'] ?? '').toString().trim(),
+                value: (m['value'] ?? '').toString().trim(),
+              ),
+            )
             .toList();
       }
     } catch (_) {
@@ -372,29 +527,28 @@ class ScheduleService {
 
     final out = <SearchItem>[];
     for (final m in objRe.allMatches(src)) {
-      out.add(SearchItem(
-        id: m.group(1)!.trim(),
-        value: m.group(2)!.trim(),
-      ));
+      out.add(SearchItem(id: m.group(1)!.trim(), value: m.group(2)!.trim()));
     }
     return out;
   }
+
   bool _pageHasArrays(String html) {
     final c = _extractJsArray(html: html, variableName: 'courses');
     final t = _extractJsArray(html: html, variableName: 'tas');
     return c != null && t != null;
   }
 
-// --- Add to ScheduleService ---
+  // --- Add to ScheduleService ---
 
   Future<Map<String, List<ScheduleSlot>>> fetchAcademicSchedule({
     List<String> courseIds = const [],
-    List<String> staffIds  = const [],
+    List<String> staffIds = const [],
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
     // Build a stable key for this particular query (IDs order matters; you can sort if you prefer)
-    final queryKeyRaw = 'courses=${courseIds.join(",")}__staff=${staffIds.join(",")}';
+    final queryKeyRaw =
+        'courses=${courseIds.join(",")}__staff=${staffIds.join(",")}';
     final queryKey = base64Url.encode(utf8.encode(queryKeyRaw));
 
     final cacheKey = 'cache_acad_html_$queryKey';
@@ -403,28 +557,39 @@ class ScheduleService {
     // headers you already used on the page
     const headers = {
       'User-Agent':
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
           '(KHTML, like Gecko) Chrome/124.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept':
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9',
       'Connection': 'keep-alive',
     };
 
     try {
       final client = await _createClient();
-      final uri = Uri.parse('https://apps.guc.edu.eg/student_ext/Scheduling/SearchAcademicScheduled_001.aspx');
+      final uri = Uri.parse(
+        'https://apps.guc.edu.eg/student_ext/Scheduling/SearchAcademicScheduled_001.aspx',
+      );
 
       // 1) GET to capture tokens
       final getResp = await client.get(uri, headers: headers);
       if (getResp.statusCode != 200) {
-        throw HttpException('GET Academic Schedule returned ${getResp.statusCode}');
+        throw HttpException(
+          'GET Academic Schedule returned ${getResp.statusCode}',
+        );
       }
       final getDoc = parser.parse(getResp.body);
-      final viewState  = getDoc.querySelector('#__VIEWSTATE')?.attributes['value'] ?? '';
-      final viewGen    = getDoc.querySelector('#__VIEWSTATEGENERATOR')?.attributes['value'] ?? '';
-      final eventValid = getDoc.querySelector('#__EVENTVALIDATION')?.attributes['value'] ?? '';
+      final viewState =
+          getDoc.querySelector('#__VIEWSTATE')?.attributes['value'] ?? '';
+      final viewGen =
+          getDoc.querySelector('#__VIEWSTATEGENERATOR')?.attributes['value'] ??
+          '';
+      final eventValid =
+          getDoc.querySelector('#__EVENTVALIDATION')?.attributes['value'] ?? '';
       if (viewState.isEmpty || eventValid.isEmpty) {
-        throw StateError('Missing form tokens (__VIEWSTATE / __EVENTVALIDATION)');
+        throw StateError(
+          'Missing form tokens (__VIEWSTATE / __EVENTVALIDATION)',
+        );
       }
 
       // 2) POST Show Schedule with selections
@@ -435,7 +600,8 @@ class ScheduleService {
           '__VIEWSTATE': viewState,
           '__VIEWSTATEGENERATOR': viewGen,
           '__EVENTVALIDATION': eventValid,
-          r'ctl00$ctl00$ContentPlaceHolderright$ContentPlaceHoldercontent$B_ShowSchedule': 'Show Schedule',
+          r'ctl00$ctl00$ContentPlaceHolderright$ContentPlaceHoldercontent$B_ShowSchedule':
+              'Show Schedule',
         },
         courseIds: courseIds,
         staffIds: staffIds,
@@ -450,7 +616,9 @@ class ScheduleService {
         body: body,
       );
       if (postResp.statusCode != 200) {
-        throw HttpException('POST Academic Schedule returned ${postResp.statusCode}');
+        throw HttpException(
+          'POST Academic Schedule returned ${postResp.statusCode}',
+        );
       }
 
       // cache the result HTML
@@ -475,8 +643,7 @@ class ScheduleService {
     }
   }
 
-
-// Build x-www-form-urlencoded with repeated fields course[] / ta[]
+  // Build x-www-form-urlencoded with repeated fields course[] / ta[]
   String _buildFormBody({
     required Map<String, String> singles,
     required List<String> courseIds,
@@ -491,16 +658,16 @@ class ScheduleService {
     }
 
     singles.forEach(add);
-    for (final id in courseIds) add('course[]', id);
-    for (final id in staffIds)  add('ta[]', id);
+    for (final id in courseIds) {add('course[]', id);}
+    for (final id in staffIds) {add('ta[]', id);}
 
     return buf.toString();
   }
 
-// Parse the schedule table (8 slots max per day). Leaves start/end empty.
+  // Parse the schedule table (8 slots max per day). Leaves start/end empty.
   Map<String, List<ScheduleSlot>> _parseAcademicSchedule(String html) {
     // Local helpers (scoped to this method so you don’t have to add new members)
-    String _typeFromText(String t) {
+    String typeFromText(String t) {
       final s = t.toLowerCase();
 
       // Full words
@@ -518,29 +685,38 @@ class ScheduleService {
       // Lone letters at word boundaries
       if (RegExp(r'(^|[\s\-_./])t($|[\s\-_./])').hasMatch(s)) return 'Tutorial';
       if (RegExp(r'(^|[\s\-_./])l($|[\s\-_./])').hasMatch(s)) return 'Lecture';
-      if (RegExp(r'(^|[\s\-_./])(lb|lab)($|[\s\-_./])').hasMatch(s)) return 'Lab';
-      if (RegExp(r'(^|[\s\-_./])(p|pr|prac)($|[\s\-_./])').hasMatch(s)) return 'Practical';
+      if (RegExp(r'(^|[\s\-_./])(lb|lab)($|[\s\-_./])').hasMatch(s))
+        {return 'Lab';}
+      if (RegExp(r'(^|[\s\-_./])(p|pr|prac)($|[\s\-_./])').hasMatch(s))
+       { return 'Practical';}
 
       return '';
     }
 
-
-    bool _textAlreadyContainsType(String t) {
+    bool textAlreadyContainsType(String t) {
       final s = t.toLowerCase();
       return RegExp(r'\b(tut|tutorial|lec|lecture)\b').hasMatch(s) ||
           RegExp(r'\((?:t|tutorial|l|lecture)\)').hasMatch(s);
     }
 
-    String _normalize(String s) => _clean(s); // reuse your existing _clean()
+    String normalize(String s) => _clean(s); // reuse your existing _clean()
 
     final doc = parser.parse(html);
     final table = doc.querySelector(
-        '#ContentPlaceHolderright_ContentPlaceHoldercontent_schedule');
+      '#ContentPlaceHolderright_ContentPlaceHoldercontent_schedule',
+    );
 
     final days7 = const [
-      'Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday'];
+      'Saturday',
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+    ];
     Map<String, List<ScheduleSlot>> emptyOut() => {
-      for (final d in days7) d: List.generate(5, (i) => ScheduleSlot.free(i + 1)),
+      for (final d in days7)
+        d: List.generate(5, (i) => ScheduleSlot.free(i + 1)),
     };
 
     if (table == null) return emptyOut();
@@ -555,7 +731,7 @@ class ScheduleService {
       final cells = rows[r].querySelectorAll('th, td');
       if (cells.isEmpty) continue;
 
-      final dayName = _normalize(cells.first.text);
+      final dayName = normalize(cells.first.text);
       final slots = <ScheduleSlot>[];
 
       // Only first 5 slots are relevant
@@ -577,16 +753,19 @@ class ScheduleService {
         for (final div in slotDivs) {
           String group = '';
           String staff = '';
-          String loc   = '';
+          String loc = '';
 
           final dts = div.querySelectorAll('dt');
           final dds = div.querySelectorAll('dd');
           for (int i = 0; i < dts.length && i < dds.length; i++) {
-            final k = _normalize(dts[i].text).toLowerCase();
-            final v = _normalize(dds[i].text);
-            if (k == 'group')    group = v;        // DO NOT split on "|" anymore
-            else if (k == 'staff')   staff = v;
-            else if (k == 'location') loc   = v;
+            final k = normalize(dts[i].text).toLowerCase();
+            final v = normalize(dds[i].text);
+            if (k == 'group')
+              {group = v; }// DO NOT split on "|" anymore
+            else if (k == 'staff')
+            {  staff = v;}
+            else if (k == 'location')
+             { loc = v;}
           }
 
           if (loc.isNotEmpty) preferredRoom = loc;
@@ -597,13 +776,16 @@ class ScheduleService {
           }
 
           // Determine type from text itself, then fallback to inference
-          String ty = _typeFromText(group);
-          if (ty.isEmpty) ty = _typeFromText(staff);
-          if (ty.isEmpty) ty = _inferType(group, staff); // use your existing inference
+          String ty = typeFromText(group);
+          if (ty.isEmpty) ty = typeFromText(staff);
+          if (ty.isEmpty)
+            {ty = _inferType(group, staff);} // use your existing inference
 
-          final key = '${group}||${staff}||${loc}||${ty}'.toLowerCase();
+          final key = '$group||$staff||$loc||$ty'.toLowerCase();
           if (seen.add(key)) {
-            details.add(SlotDetail(course: group, room: loc, instructor: staff, type: ty));
+            details.add(
+              SlotDetail(course: group, room: loc, instructor: staff, type: ty),
+            );
           }
         }
 
@@ -614,30 +796,34 @@ class ScheduleService {
 
         // Choose the first non-empty course as primary if possible
         final primary = details.firstWhere(
-              (e) => e.course.isNotEmpty,
+          (e) => e.course.isNotEmpty,
           orElse: () => details.first,
         );
 
         // Build title: if course text already contains (Lecture/Tutorial), keep it;
         // otherwise append inferred type if available.
         String titlePrimary = primary.course;
-        if (!_textAlreadyContainsType(titlePrimary) && primary.type.isNotEmpty) {
+        if (!textAlreadyContainsType(titlePrimary) &&
+            primary.type.isNotEmpty) {
           titlePrimary = '$titlePrimary (${primary.type})';
         }
 
-        final roomPrimary =
-        primary.room.isNotEmpty ? primary.room : preferredRoom;
+        final roomPrimary = primary.room.isNotEmpty
+            ? primary.room
+            : preferredRoom;
 
-        slots.add(ScheduleSlot(
-          slot: slotNum,
-          title: titlePrimary,        // e.g., "CLPH 1032 (Lecture)" or as-is from site
-          course: primary.instructor, // second line on your tile
-          room: roomPrimary,
-          start: '',
-          end: '',
-          isFree: false,
-          details: details,           // remaining items drive +N more & popup
-        ));
+        slots.add(
+          ScheduleSlot(
+            slot: slotNum,
+            title: titlePrimary,
+            // e.g., "CLPH 1032 (Lecture)" or as-is from site
+            course: primary.instructor,
+            // second line on your tile
+            room: roomPrimary,
+            isFree: false,
+            details: details, // remaining items drive +N more & popup
+          ),
+        );
       }
 
       // Ensure exactly 5
@@ -672,13 +858,14 @@ class ScheduleService {
     if (RegExp(r'(^|[\s\-_./])t($|[\s\-_./])').hasMatch(s)) return 'Tutorial';
     if (RegExp(r'(^|[\s\-_./])l($|[\s\-_./])').hasMatch(s)) return 'Lecture';
     if (RegExp(r'(^|[\s\-_./])(lb|lab)($|[\s\-_./])').hasMatch(s)) return 'Lab';
-    if (RegExp(r'(^|[\s\-_./])(p|pr|prac)($|[\s\-_./])').hasMatch(s)) return 'Practical';
+    if (RegExp(r'(^|[\s\-_./])(p|pr|prac)($|[\s\-_./])').hasMatch(s))
+      {return 'Practical';}
 
     return '';
   }
 
   String _inferType(String group, String staff) {
-    final s = '${group} ${staff}'.toLowerCase();
+    final s = '$group $staff'.toLowerCase();
 
     // Full words
     if (RegExp(r'\b(tut|tutorial)\b').hasMatch(s)) return 'Tutorial';
@@ -686,10 +873,6 @@ class ScheduleService {
     if (RegExp(r'\b(lab|laboratory)\b').hasMatch(s)) return 'Lab';
     if (RegExp(r'\b(prac|practical)\b').hasMatch(s)) return 'Practical';
 
-
     return '';
   }
-
-
-
 }
