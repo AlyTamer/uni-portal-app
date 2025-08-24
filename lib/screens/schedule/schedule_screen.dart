@@ -70,8 +70,169 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           icon: const Icon(Icons.arrow_back, size: 40, color: Colors.purple),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Center(child: GradientTitle(text: 'Schedule', size: 32)),
+        title: Center(child: GradientTitle(text: 'Schedule', size: 29)),
         titleSpacing: 80,
+        actions: [
+          IconButton(onPressed: (){
+            showModalBottomSheet(context: context, builder: (context){
+              return SingleChildScrollView(
+                  child:Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const GradientTitle(text: "Schedule Time Slots", size: 22),
+                          const SizedBox(height: 24),
+                          Text(
+                            "For Engineering, Management, & Business Informatics",
+                            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Table(
+                            border: TableBorder.all(color: Colors.white),
+                            columnWidths: const {
+                              0: FlexColumnWidth(),
+                              1: FlexColumnWidth(),
+                              2: FlexColumnWidth(),
+                              3: FlexColumnWidth(),
+                              4: FlexColumnWidth(),
+                            },
+                            children: const [
+                              TableRow(
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text("First Slot", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text("Second Slot", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text("Third Slot", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text("Fourth Slot", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text("Fifth Slot", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                ],
+                              ),
+                              TableRow(
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0), // Padding added here
+                                    child: Text("8:15 - 9:45", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0), // Padding added here
+                                    child: Text("10:00 - 11:30", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0), // Padding added here
+                                    child: Text("11:45 - 1:15", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0), // Padding added here
+                                    child: Text("1:45 - 3:15", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0), // Padding added here
+                                    child: Text("3:45 - 5:15", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            "For Pharmacy, Applied Arts, & Law",
+                            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Table(
+                            border: TableBorder.all(color: Colors.white),
+                            columnWidths: const {
+                              0: FlexColumnWidth(),
+                              1: FlexColumnWidth(),
+                              2: FlexColumnWidth(),
+                              3: FlexColumnWidth(),
+                              4: FlexColumnWidth(),
+                            },
+                            children: const [
+                              TableRow(
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text("First Slot", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text("Second Slot", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text("Third Slot", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text("Fourth Slot", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text("Fifth Slot", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                ],
+                              ),
+                              TableRow(
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0), // Padding added here
+                                    child: Text("8:15 - 9:45", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0), // Padding added here
+                                    child: Text("10:00 - 11:30", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0), // Padding added here
+                                    child: Text("12:00 - 1:30", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0), // Padding added here
+                                    child: Text("1:45 - 3:15", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.all(8.0), // Padding added here
+                                    child: Text("3:45 - 5:15", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                  )
+              );
+            });
+          }, icon: const Icon(Icons.info_outline,color: Colors.lightBlue,))
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
